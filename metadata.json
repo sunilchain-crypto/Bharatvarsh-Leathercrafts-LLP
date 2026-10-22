@@ -1,0 +1,6 @@
+{
+  "name": "Bharatvarsh Leathercrafts",
+  "description": "Bespoke handcrafted luxury leather goods. Timeless vegetable-tanned full-grain belts, wallets, briefcases, and bags by Bharatvarsh Leathercrafts LLP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

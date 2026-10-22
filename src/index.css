@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #FAF7F2;
+    color: #24140D;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-serif-display {
+    font-family: var(--font-serif);
+  }
+}
+
+/* Custom craftsmanship utilities */
+.stitch-border {
+  border-style: dashed;
+  border-width: 1px;
+  border-color: #C29B38;
+}
+
+.saddle-stitch {
+  background-image: repeating-linear-gradient(
+    90deg,
+    #D4B37A,
+    #D4B37A 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 100% 1.5px;
+  background-repeat: no-repeat;
+  background-position: bottom;
+}
+
+.leather-subtle-pattern {
+  background-color: #FAF7F2;
+  background-image: radial-gradient(rgba(120, 58, 29, 0.04) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Smooth transitions */
+* {
+  box-sizing: border-box;
+}

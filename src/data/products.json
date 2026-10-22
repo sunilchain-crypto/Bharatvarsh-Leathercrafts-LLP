@@ -1,0 +1,22 @@
+{
+  "categories": [
+    {
+      "id": "men",
+      "name": "Men",
+      "description": "Bespoke hand-stitched leather belts and slim artisanal bifold & card wallets designed for distinguished everyday carry.",
+      "productTypes": ["Leather Belts", "Wallets"]
+    },
+    {
+      "id": "women",
+      "name": "Women",
+      "description": "Refined full-grain leather waist belts, structured wallets, and artisanal clutches and day purses with solid brass accents.",
+      "productTypes": ["Belts", "Wallets", "Purses"]
+    },
+    {
+      "id": "unisex",
+      "name": "Unisex",
+      "description": "Heirloom travel backpacks and executive briefcases engineered for longevity, modern utility, and timeless patina.",
+      "productTypes": ["Backpacks", "Briefcases"]
+    }
+  ]
+}
