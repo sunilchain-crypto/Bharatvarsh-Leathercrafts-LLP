@@ -1,18 +1,22 @@
 import React from 'react';
 import { Product } from '../types';
 import { ProductImage } from './ProductImage';
-import { Eye, Plus } from 'lucide-react';
+import { Eye, Plus, Bookmark } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   onSelect: (product: Product) => void;
   onQuickAdd: (product: Product) => void;
+  onToggleWishlist?: (product: Product) => void;
+  isInWishlist?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onSelect,
-  onQuickAdd
+  onQuickAdd,
+  onToggleWishlist,
+  isInWishlist = false
 }) => {
   return (
     <div className="group relative flex flex-col bg-[#FAF7F2] border border-[#24140D]/10 hover:border-[#783A1D]/40 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -31,6 +35,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.badge}
           </div>
         )}
+
+        {/* Wishlist Bookmark Button (Top Right) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleWishlist?.(product);
+          }}
+          aria-label={isInWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all cursor-pointer backdrop-blur-xs shadow-sm z-10 ${
+            isInWishlist
+              ? 'bg-[#24140D] text-[#C29B38] scale-105 ring-1 ring-[#C29B38]/50'
+              : 'bg-[#FAF7F2]/80 hover:bg-[#FAF7F2] text-[#24140D]/70 hover:text-[#783A1D]'
+          }`}
+          title={isInWishlist ? 'Saved in your wishlist' : 'Save to wishlist'}
+        >
+          <Bookmark className={`w-3.5 h-3.5 ${isInWishlist ? 'fill-current text-[#C29B38]' : ''}`} />
+        </button>
 
         {/* Quick Actions Hover Drawer */}
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[#24140D]/90 via-[#24140D]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-2">

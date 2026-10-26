@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { ProductImage } from './ProductImage';
-import { X, Check, Shield, Sparkles, Feather, Clock, ShoppingBag, Truck } from 'lucide-react';
+import { X, Check, Shield, Sparkles, Feather, Clock, ShoppingBag, Truck, Bookmark } from 'lucide-react';
 
 interface ProductDetailModalProps {
   product: Product | null;
   onClose: () => void;
   onAddToCart: (product: Product, selectedColor: string, monogramText?: string, quantity?: number) => void;
   onBuyNow: (product: Product, selectedColor: string, monogramText?: string, quantity?: number) => void;
+  onToggleWishlist?: (product: Product, selectedColor: string, monogramText?: string) => void;
+  isInWishlist?: boolean;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   onClose,
   onAddToCart,
-  onBuyNow
+  onBuyNow,
+  onToggleWishlist,
+  isInWishlist = false
 }) => {
   if (!product) return null;
 
@@ -225,6 +229,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <ShoppingBag className="w-4 h-4 text-[#783A1D]" />
                     <span>Add to Bag</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onToggleWishlist?.(product, selectedColor, monogramText.trim() ? monogramText.toUpperCase() : undefined)}
+                    className={`p-3 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shadow-xs ${
+                      isInWishlist
+                        ? 'bg-[#24140D] text-[#C29B38] border-[#24140D]'
+                        : 'bg-[#FAF7F2] text-[#24140D] border-[#24140D]/30 hover:bg-[#EFE9DF]'
+                    }`}
+                    title={isInWishlist ? "Saved in your Patron Wishlist" : "Curate to Patron Wishlist"}
+                    aria-label={isInWishlist ? "Remove from Wishlist" : "Save to Wishlist"}
+                  >
+                    <Bookmark className={`w-4 h-4 ${isInWishlist ? 'fill-current text-[#C29B38]' : ''}`} />
                   </button>
                 </div>
 

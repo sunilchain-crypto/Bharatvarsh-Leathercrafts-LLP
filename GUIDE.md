@@ -109,3 +109,26 @@ VITE_STRIPE_PUBLISHABLE_KEY="pk_live_your_actual_key_here"
 - Invoices automatically calculate the **18% GST** (HSN Code 4202 for leather articles).
 - B2B customers can optionally enter their **GSTIN** during checkout to receive tax input credit invoices.
 - Registered LLP legal details are reflected in the footer and order receipts.
+
+---
+
+## 6. Corporate Gifting & Bulk Order B2B Suite
+
+Accessed via the **"Corporate"** link in the main navigation or footer.
+
+### Features
+1. **Curated Ensembles**: Showcase sets for executive retreats, partner appreciation, and milestone celebrations.
+2. **Volume Concession Tiers**:
+   - `10–24 pcs`: 5% Volume Discount (reduced by 10% from 15%)
+   - `25–49 pcs`: 10% Volume Discount (reduced by 10% from 20%)
+   - `50–99 pcs`: 15% Volume Discount + Complimentary Custom CNC Brass Die Plate (reduced by 10% from 25%)
+   - `100+ pcs`: 20% Volume Discount + Complimentary Custom CNC Brass Die Plate & Priority Logistics (reduced by 10% from 30%)
+3. **Custom Crest Stamping**: Live simulator supporting *Deep Blind Deboss*, *22k Gold Foil Stamping*, and *Palladium Silver Foil*.
+4. **Presentation Packaging**:
+   - Standard Unbleached Cotton Dust Bag (Complimentary)
+   - Executive Rigid Matte Espresso Gift Box with Wax Seal (+₹280/pc)
+   - The Atelier Heritage Hamper with Conditioning Balm (+₹650/pc)
+5. **Instant B2B Proforma GST Quotation**:
+   - Computes Taxable Value, 18% Integrated GST (HSN 4202), and highlights the buyer's **Input Tax Credit (ITC)** eligible amount.
+   - Includes full formal printable PDF proforma with LLP credentials, banking NEFT/RTGS wire settlement instructions, and authorized signatory blocks.
+

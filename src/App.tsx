@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TopCategory, Product, CartItem, Order } from './types';
+import { TopCategory, Product, CartItem, Order, WishlistItem, WishlistRegistry } from './types';
 import { catalogService } from './services/catalogService';
 import { orderService } from './services/orderService';
+import { wishlistService } from './services/wishlistService';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CatalogSection } from './components/CatalogSection';
@@ -9,9 +10,11 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AccountModal } from './components/AccountModal';
+import { WishlistModal } from './components/WishlistModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { PaymentSettingsModal } from './components/PaymentSettingsModal';
 import { SetupGuideModal } from './components/SetupGuideModal';
+import { CorporateGiftingView } from './components/CorporateGiftingView';
 import { BrandStory } from './components/BrandStory';
 import { Footer } from './components/Footer';
 import { Check, ShoppingBag } from 'lucide-react';
@@ -23,15 +26,31 @@ export default function App() {
   const [products, setProducts] = useState(() => catalogService.getProducts());
   const [orders, setOrders] = useState<Order[]>(() => orderService.getOrders());
   const [activeCategory, setActiveCategory] = useState<TopCategory | 'All'>('All');
+  const [isCorporateView, setIsCorporateView] = useState(false);
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isPaymentSettingsOpen, setIsPaymentSettingsOpen] = useState(false);
   const [isSetupGuideOpen, setIsSetupGuideOpen] = useState(false);
+
+  // Patron Wishlist & Shared Registry state
+  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => wishlistService.getWishlist());
+  const [activeSharedRegistry, setActiveSharedRegistry] = useState<WishlistRegistry | null>(null);
+
+  // Check URL on load for shared registry link (?registry=...)
+  useEffect(() => {
+    const shared = wishlistService.parseRegistryFromUrl(products);
+    if (shared && shared.items.length > 0) {
+      setActiveSharedRegistry(shared);
+      setIsWishlistOpen(true);
+      showToast(`Viewing ${shared.patronName}’s Gift Registry`);
+    }
+  }, [products]);
 
   // Cart state with persistence
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -62,6 +81,32 @@ export default function App() {
   const refreshOrders = () => {
     setOrders(orderService.getOrders());
   };
+
+  const refreshWishlist = () => {
+    setWishlist(wishlistService.getWishlist());
+  };
+
+  const handleToggleWishlist = (product: Product, selectedColor?: string, monogramText?: string) => {
+    const color = selectedColor || product.colors[0]?.name || 'Standard';
+    const isCurrentlySaved = wishlist.some((it) => it.product.id === product.id);
+
+    if (isCurrentlySaved) {
+      const remaining = wishlistService.removeFromWishlist(product.id);
+      setWishlist(remaining);
+      showToast(`Removed "${product.name}" from your wishlist`);
+    } else {
+      const { isNew } = wishlistService.addToWishlist(product, color, monogramText);
+      setWishlist(wishlistService.getWishlist());
+      showToast(isNew ? `Saved "${product.name}" to your patron wishlist` : `Updated "${product.name}" preferences in wishlist`);
+    }
+  };
+
+  const handleMoveToBagFromWishlist = (item: WishlistItem) => {
+    handleAddToCart(item.product, item.selectedColor, item.monogramText, 1);
+    setIsWishlistOpen(false);
+  };
+
+  const wishlistProductIds = wishlist.map((it) => it.product.id);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -186,51 +231,86 @@ export default function App() {
       {/* Main Header with Top Bar Contract */}
       <Header
         activeCategory={activeCategory}
-        onSelectCategory={setActiveCategory}
+        onSelectCategory={(cat) => {
+          setIsCorporateView(false);
+          setActiveCategory(cat);
+        }}
         cartCount={cartTotalCount}
         ordersCount={orders.length}
+        wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
+        onOpenCorporate={() => {
+          setIsCorporateView(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         onOpenAdmin={() => setIsAdminOpen(true)}
-        onScrollToStory={scrollToStory}
+        onScrollToStory={() => {
+          setIsCorporateView(false);
+          setTimeout(scrollToStory, 100);
+        }}
+        isCorporateView={isCorporateView}
       />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <Hero
-          onSelectCategory={(cat) => {
-            setActiveCategory(cat);
-            const el = document.getElementById('catalog-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          onExploreAll={() => {
-            setActiveCategory('All');
-            const el = document.getElementById('catalog-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
+        {isCorporateView ? (
+          <CorporateGiftingView
+            products={products}
+            onBackToStore={() => {
+              setIsCorporateView(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenAccount={() => setIsAccountOpen(true)}
+          />
+        ) : (
+          <>
+            {/* Hero Section */}
+            <Hero
+              onSelectCategory={(cat) => {
+                setActiveCategory(cat);
+                const el = document.getElementById('catalog-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onExploreAll={() => {
+                setActiveCategory('All');
+                const el = document.getElementById('catalog-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
 
-        {/* Catalog Section supporting unlimited items and product types */}
-        <CatalogSection
-          categories={categories}
-          products={products}
-          activeCategory={activeCategory}
-          onSelectCategory={setActiveCategory}
-          onSelectProduct={setSelectedProduct}
-          onQuickAdd={handleQuickAdd}
-        />
+            {/* Catalog Section supporting unlimited items and product types */}
+            <CatalogSection
+              categories={categories}
+              products={products}
+              activeCategory={activeCategory}
+              onSelectCategory={setActiveCategory}
+              onSelectProduct={setSelectedProduct}
+              onQuickAdd={handleQuickAdd}
+              wishlistProductIds={wishlistProductIds}
+              onToggleWishlist={(p) => handleToggleWishlist(p)}
+            />
 
-        {/* Artisanal Heritage & Craftsmanship Story */}
-        <BrandStory />
+            {/* Artisanal Heritage & Craftsmanship Story */}
+            <BrandStory />
+          </>
+        )}
       </main>
 
       {/* Footer */}
       <Footer
-        onSelectCategory={setActiveCategory}
+        onSelectCategory={(cat) => {
+          setIsCorporateView(false);
+          setActiveCategory(cat);
+        }}
         onOpenAdmin={() => setIsAdminOpen(true)}
         onOpenPaymentSettings={() => setIsPaymentSettingsOpen(true)}
         onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenCorporate={() => {
+          setIsCorporateView(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* Product Detail Modal */}
@@ -239,6 +319,8 @@ export default function App() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
+        onToggleWishlist={handleToggleWishlist}
+        isInWishlist={selectedProduct ? wishlistProductIds.includes(selectedProduct.id) : false}
       />
 
       {/* Cart Drawer */}
@@ -274,6 +356,26 @@ export default function App() {
         orders={orders}
         onOrdersChanged={refreshOrders}
         onReorder={handleReorder}
+      />
+
+      {/* Patron Wishlist & Gift Registry Modal */}
+      <WishlistModal
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        wishlist={wishlist}
+        onWishlistChanged={refreshWishlist}
+        onMoveToBag={handleMoveToBagFromWishlist}
+        onSelectProduct={(p) => {
+          setIsWishlistOpen(false);
+          setSelectedProduct(p);
+        }}
+        activeSharedRegistry={activeSharedRegistry}
+        onClearSharedRegistry={() => {
+          setActiveSharedRegistry(null);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('registry');
+          window.history.replaceState({}, '', url.toString());
+        }}
       />
 
       {/* Store Admin & Catalog CMS Modal */}

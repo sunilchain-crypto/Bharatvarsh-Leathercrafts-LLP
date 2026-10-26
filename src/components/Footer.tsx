@@ -1,6 +1,6 @@
 import React from 'react';
 import { TopCategory } from '../types';
-import { SlidersHorizontal, CreditCard, BookOpen, Shield, Mail, Phone, MapPin } from 'lucide-react';
+import { SlidersHorizontal, CreditCard, BookOpen, Shield, Mail, Phone, MapPin, Building2 } from 'lucide-react';
 
 interface FooterProps {
   onSelectCategory: (category: TopCategory | 'All') => void;
@@ -8,6 +8,7 @@ interface FooterProps {
   onOpenPaymentSettings: () => void;
   onOpenSetupGuide: () => void;
   onOpenAccount: () => void;
+  onOpenCorporate?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -15,7 +16,8 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenAdmin,
   onOpenPaymentSettings,
   onOpenSetupGuide,
-  onOpenAccount
+  onOpenAccount,
+  onOpenCorporate
 }) => {
   return (
     <footer className="bg-[#1C1009] text-[#EFE9DF] border-t border-[#C29B38]/20">
@@ -136,6 +138,15 @@ export const Footer: React.FC<FooterProps> = ({
               Store Management
             </h4>
             <ul className="space-y-2 text-xs">
+              <li>
+                <button
+                  onClick={onOpenCorporate}
+                  className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-[#C29B38]" />
+                  <span>Corporate Gifting & GST Quotes</span>
+                </button>
+              </li>
               <li>
                 <button
                   onClick={onOpenAccount}

@@ -10,6 +10,8 @@ interface CatalogSectionProps {
   onSelectCategory: (category: TopCategory | 'All') => void;
   onSelectProduct: (product: Product) => void;
   onQuickAdd: (product: Product) => void;
+  wishlistProductIds?: string[];
+  onToggleWishlist?: (product: Product) => void;
 }
 
 export const CatalogSection: React.FC<CatalogSectionProps> = ({
@@ -18,7 +20,9 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
   activeCategory,
   onSelectCategory,
   onSelectProduct,
-  onQuickAdd
+  onQuickAdd,
+  wishlistProductIds = [],
+  onToggleWishlist
 }) => {
   const [activeProductType, setActiveProductType] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -317,6 +321,8 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                           product={prod}
                           onSelect={onSelectProduct}
                           onQuickAdd={onQuickAdd}
+                          onToggleWishlist={onToggleWishlist}
+                          isInWishlist={wishlistProductIds.includes(prod.id)}
                         />
                       ))}
                     </div>
@@ -334,6 +340,8 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                 product={product}
                 onSelect={onSelectProduct}
                 onQuickAdd={onQuickAdd}
+                onToggleWishlist={onToggleWishlist}
+                isInWishlist={wishlistProductIds.includes(product.id)}
               />
             ))}
           </div>

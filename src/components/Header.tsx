@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, SlidersHorizontal, Menu, X, User, Package } from 'lucide-react';
+import { ShoppingBag, SlidersHorizontal, Menu, X, User, Package, Bookmark } from 'lucide-react';
 import { TopCategory } from '../types';
 
 interface HeaderProps {
@@ -7,10 +7,14 @@ interface HeaderProps {
   onSelectCategory: (category: TopCategory | 'All') => void;
   cartCount: number;
   ordersCount: number;
+  wishlistCount: number;
   onOpenCart: () => void;
   onOpenAccount: () => void;
+  onOpenWishlist: () => void;
+  onOpenCorporate: () => void;
   onOpenAdmin: () => void;
   onScrollToStory: () => void;
+  isCorporateView?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,10 +22,14 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectCategory,
   cartCount,
   ordersCount,
+  wishlistCount,
   onOpenCart,
   onOpenAccount,
+  onOpenWishlist,
+  onOpenCorporate,
   onOpenAdmin,
-  onScrollToStory
+  onScrollToStory,
+  isCorporateView = false
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -86,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => handleNavClick('Men')}
             className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer py-1 relative ${
-              activeCategory === 'Men'
+              !isCorporateView && activeCategory === 'Men'
                 ? 'text-[#783A1D] font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#783A1D]'
                 : 'hover:text-[#24140D]'
             }`}
@@ -96,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => handleNavClick('Women')}
             className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer py-1 relative ${
-              activeCategory === 'Women'
+              !isCorporateView && activeCategory === 'Women'
                 ? 'text-[#783A1D] font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#783A1D]'
                 : 'hover:text-[#24140D]'
             }`}
@@ -106,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => handleNavClick('Unisex')}
             className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer py-1 relative ${
-              activeCategory === 'Unisex'
+              !isCorporateView && activeCategory === 'Unisex'
                 ? 'text-[#783A1D] font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#783A1D]'
                 : 'hover:text-[#24140D]'
             }`}
@@ -114,28 +122,48 @@ export const Header: React.FC<HeaderProps> = ({
             Unisex
           </button>
           <button
+            onClick={onOpenCorporate}
+            className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer py-1 relative ${
+              isCorporateView
+                ? 'text-[#783A1D] font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#783A1D]'
+                : 'hover:text-[#24140D]'
+            }`}
+            title="Institutional & Corporate Gifting with Indian GST Quotations"
+          >
+            Corporate
+          </button>
+          <button
             onClick={onOpenAccount}
             className="transition-colors whitespace-nowrap shrink-0 cursor-pointer hover:text-[#783A1D] flex items-center gap-1.5"
             title="View past purchases and live delivery status"
           >
             <Package className="w-3.5 h-3.5 text-[#783A1D]" />
-            <span>Order History</span>
+            <span>Orders</span>
             {ordersCount > 0 && (
               <span className="bg-[#EFE9DF] text-[#783A1D] font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-[#24140D]/10 tabular-nums">
                 {ordersCount}
               </span>
             )}
           </button>
-          <button
-            onClick={onScrollToStory}
-            className="transition-colors whitespace-nowrap shrink-0 cursor-pointer hover:text-[#783A1D]"
-          >
-            Craftsmanship
-          </button>
         </nav>
 
-        {/* Zone 3: 1 Primary Action (Shopping Bag) + Account + Mobile Toggle */}
+        {/* Zone 3: Wishlist + Account + Primary Action (Bag) + Mobile Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Wishlist Button */}
+          <button
+            onClick={onOpenWishlist}
+            aria-label={`View patron wishlist containing ${wishlistCount} saved items`}
+            className="relative p-2 rounded-lg text-[#24140D] hover:bg-[#EFE9DF] transition-colors cursor-pointer"
+            title="Patron Wishlist & Gift Registry"
+          >
+            <Bookmark className={`w-4 h-4 ${wishlistCount > 0 ? 'text-[#783A1D] fill-[#783A1D]/20' : 'text-[#783A1D]'}`} />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#C29B38] text-[#24140D] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono">
+                {wishlistCount}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={onOpenAccount}
             aria-label="Customer profile and order history"
@@ -195,6 +223,33 @@ export const Header: React.FC<HeaderProps> = ({
               className="text-left font-medium py-1 text-[#24140D]"
             >
               Unisex (Backpacks & Briefcases)
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenCorporate();
+              }}
+              className="text-left font-medium py-1 text-[#783A1D] flex items-center justify-between"
+            >
+              <span>Corporate Gifting & GST Quotes</span>
+              <span className="text-[10px] bg-[#C29B38]/20 text-[#783A1D] font-semibold px-2 py-0.5 rounded">
+                B2B Suite
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenWishlist();
+              }}
+              className="text-left font-medium py-1 text-[#783A1D] flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <Bookmark className="w-4 h-4" />
+                <span>Patron Wishlist & Gifts</span>
+              </span>
+              <span className="text-xs bg-[#EFE9DF] px-2 py-0.5 rounded font-mono font-bold">
+                {wishlistCount}
+              </span>
             </button>
             <button
               onClick={() => {

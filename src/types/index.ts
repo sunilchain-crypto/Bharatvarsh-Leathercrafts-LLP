@@ -94,3 +94,59 @@ export interface PaymentGatewayConfig {
   stripePublishableKey: string;
   testMode: boolean;
 }
+
+export type CorporatePackagingType = 'standard_dustbag' | 'rigid_executive_box' | 'bespoke_hamper';
+export type DebossingFinish = 'blind_deboss' | 'gold_foil_22k' | 'silver_palladium';
+
+export interface CorporateQuoteRequest {
+  id: string;
+  quoteNumber: string;
+  companyName: string;
+  gstin: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  pincode: string;
+  productId: string;
+  productName: string;
+  productType: string;
+  quantity: number;
+  packaging: CorporatePackagingType;
+  debossingFinish: DebossingFinish;
+  customLogoCrestText: string;
+  baseUnitPrice: number;
+  discountPercentage: number;
+  discountedUnitPrice: number;
+  diePlateFee: number;
+  packagingUnitFee: number;
+  taxableSubtotal: number;
+  gstRate: number;
+  gstAmount: number;
+  grandTotal: number;
+  inputTaxCreditValue: number;
+  createdAt: string;
+  deliveryTimelineWeeks: string;
+  notes?: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  product: Product;
+  selectedColor: string;
+  monogramText?: string;
+  addedAt: string;
+  isClaimed?: boolean;
+  claimedBy?: string;
+}
+
+export interface WishlistRegistry {
+  id: string;
+  patronName: string;
+  occasion: string;
+  personalNote: string;
+  items: WishlistItem[];
+  createdAt: string;
+}
+
