@@ -150,3 +150,50 @@ export interface WishlistRegistry {
   createdAt: string;
 }
 
+export interface PincodeLogisticsInfo {
+  pincode: string;
+  city: string;
+  state: string;
+  zone: 'Metro' | 'Tier-2' | 'Regional' | 'Remote / Special';
+  courierPartner: 'Blue Dart Apex Air' | 'Delhivery Express Air' | 'Delhivery Surface' | 'India Post Speed Post';
+  transitDays: number;
+  dispatchTimeNotice: string;
+  estimatedDeliveryDate: string;
+  codAvailable: boolean;
+  maxCodAmount: number;
+  isServiceable: boolean;
+  freeShippingEligible: boolean;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description: string;
+  discountType: 'percentage' | 'flat';
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscountCap?: number;
+  validUntil?: string;
+  usageLimit?: number;
+  usageCount: number;
+  isActive: boolean;
+  badge?: string;
+}
+
+export interface PatronReview {
+  id: string;
+  productId?: string;
+  productName?: string;
+  authorName: string;
+  location: string;
+  rating: number; // 1 to 5
+  title: string;
+  story: string;
+  monthsOfUse: number; // Months item has been in real-world use
+  patinaGrade: 'Rich Cognac Glow' | 'Deep Amber Patina' | 'Warm Honey Saddle' | 'Dark Espresso Glaze' | 'Crisp Heirloom Grain';
+  photoUrl?: string;
+  verifiedBuyer: boolean;
+  createdAt: string;
+  helpfulCount: number;
+}
+

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { CategoryStructure, Product, TopCategory } from '../types';
+import { CategoryStructure, Product, TopCategory, Coupon } from '../types';
 import { catalogService } from '../services/catalogService';
+import { couponService } from '../services/couponService';
+import { aiService, GeneratedStoryResult } from '../services/aiService';
 import {
   X,
   Plus,
@@ -14,7 +16,19 @@ import {
   HelpCircle,
   FolderTree,
   Tag,
-  PackageCheck
+  PackageCheck,
+  Ticket,
+  Percent,
+  Calendar,
+  Sparkles,
+  ToggleLeft,
+  ToggleRight,
+  Wand2,
+  Check,
+  ShieldCheck,
+  RefreshCw,
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 
 interface AdminPanelModalProps {
@@ -34,10 +48,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'json' | 'guide'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'coupons' | 'json' | 'guide'>('products');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Coupons state
+  const [coupons, setCoupons] = useState<Coupon[]>(() => couponService.getCoupons());
+  const [isAddingCoupon, setIsAddingCoupon] = useState(false);
+  const [cpnCode, setCpnCode] = useState('');
+  const [cpnDesc, setCpnDesc] = useState('');
+  const [cpnType, setCpnType] = useState<'percentage' | 'flat'>('percentage');
+  const [cpnValue, setCpnValue] = useState<number>(10);
+  const [cpnMinOrder, setCpnMinOrder] = useState<number>(3000);
+  const [cpnMaxCap, setCpnMaxCap] = useState<number>(1500);
+  const [cpnExpiry, setCpnExpiry] = useState<string>('2026-12-31');
+  const [cpnLimit, setCpnLimit] = useState<number>(500);
+  const [cpnBadge, setCpnBadge] = useState<string>('Festive Offer');
 
   // New/Edit form state
   const [formName, setFormName] = useState('');
@@ -66,6 +93,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [jsonText, setJsonText] = useState(catalogService.exportCatalogJSON());
   const [copied, setCopied] = useState(false);
 
+  // AI Story Generator & Admin Verification State
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  const [showAiVerificationModal, setShowAiVerificationModal] = useState(false);
+  const [aiDraft, setAiDraft] = useState<GeneratedStoryResult | null>(null);
+  const [editableDraft, setEditableDraft] = useState<GeneratedStoryResult>({
+    shortDescription: '',
+    description: '',
+    features: [],
+    careInstructions: '',
+    suggestedBadge: ''
+  });
+  const [aiVerified, setAiVerified] = useState(false);
+  const [aiTone, setAiTone] = useState<'regal' | 'heritage' | 'contemporary'>('regal');
+
   const resetForm = () => {
     setEditingProduct(null);
     setIsAddingNew(false);
@@ -85,6 +126,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setFormMonogram(true);
     setFormColors('Saddle Tan (#8B4513), Deep Espresso (#24140D)');
     setFormFeatures('Hand-beveled edges\nSaddle-stitched by hand\nSolid cast brass');
+    setAiVerified(false);
+    setAiDraft(null);
+    setShowAiVerificationModal(false);
   };
 
   const startEditProduct = (prod: Product) => {
@@ -107,7 +151,67 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setFormMonogram(prod.monogramAvailable);
     setFormColors(prod.colors.map((c) => `${c.name} (${c.hex})`).join(', '));
     setFormFeatures(prod.features.join('\n'));
+    setAiVerified(false);
+    setAiDraft(null);
+    setShowAiVerificationModal(false);
     setActiveTab('products');
+  };
+
+  const handleTriggerAiStory = async () => {
+    if (!formName.trim()) {
+      setStatusMessage({ text: 'Please enter a product title first so the AI can craft an authentic story.', type: 'error' });
+      setTimeout(() => setStatusMessage(null), 3500);
+      return;
+    }
+
+    setIsGeneratingStory(true);
+    try {
+      const generated = await aiService.generateStory({
+        name: formName,
+        category: formCategory,
+        productType: formProductType,
+        leatherType: formLeatherType,
+        hardware: formHardware,
+        dimensions: formDimensions,
+        features: formFeatures,
+        tone: aiTone === 'regal' 
+          ? 'Regal Indian luxury, honoring Kanpur & Dharavi vegetable tanning craftsmanship'
+          : aiTone === 'heritage'
+          ? 'Time-honored artisanal legacy, saddle stitching, generational durability'
+          : 'Modern minimalist luxury, clean architectural lines with heirloom full-grain leather'
+      });
+
+      setAiDraft(generated);
+      setEditableDraft(generated);
+      setShowAiVerificationModal(true);
+    } catch (err) {
+      console.error(err);
+      setStatusMessage({ text: 'Failed to generate AI story. Please try again.', type: 'error' });
+      setTimeout(() => setStatusMessage(null), 3500);
+    } finally {
+      setIsGeneratingStory(false);
+    }
+  };
+
+  const handleApproveAiStory = () => {
+    if (!editableDraft) return;
+
+    setFormShortDesc(editableDraft.shortDescription);
+    setFormDesc(editableDraft.description);
+    if (editableDraft.features && editableDraft.features.length > 0) {
+      setFormFeatures(editableDraft.features.join('\n'));
+    }
+    if (editableDraft.suggestedBadge) {
+      setFormBadge(editableDraft.suggestedBadge);
+    }
+
+    setAiVerified(true);
+    setShowAiVerificationModal(false);
+    setStatusMessage({
+      text: '✓ AI Luxury Story verified & approved by Admin! Applied to product fields.',
+      type: 'success'
+    });
+    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
@@ -200,6 +304,56 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
+  const handleCreateCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cpnCode.trim()) return;
+
+    couponService.addCoupon({
+      code: cpnCode.trim().toUpperCase(),
+      description: cpnDesc.trim() || `${cpnType === 'percentage' ? cpnValue + '%' : '₹' + cpnValue} promotional voucher`,
+      discountType: cpnType,
+      discountValue: Number(cpnValue),
+      minOrderValue: Number(cpnMinOrder),
+      maxDiscountCap: cpnType === 'percentage' ? Number(cpnMaxCap) : undefined,
+      validUntil: cpnExpiry || undefined,
+      usageLimit: Number(cpnLimit),
+      isActive: true,
+      badge: cpnBadge.trim() || undefined
+    });
+
+    setCoupons(couponService.getCoupons());
+    setIsAddingCoupon(false);
+    setCpnCode('');
+    setCpnDesc('');
+    setStatusMessage({ text: `Promotional coupon "${cpnCode.toUpperCase()}" created successfully!`, type: 'success' });
+    setTimeout(() => setStatusMessage(null), 3500);
+  };
+
+  const handleToggleCoupon = (id: string) => {
+    const newState = couponService.toggleCouponActive(id);
+    setCoupons(couponService.getCoupons());
+    setStatusMessage({ text: `Coupon ${newState ? 'activated' : 'paused'}.`, type: 'success' });
+    setTimeout(() => setStatusMessage(null), 2500);
+  };
+
+  const handleDeleteCoupon = (id: string, code: string) => {
+    if (window.confirm(`Delete coupon "${code}" permanently?`)) {
+      couponService.deleteCoupon(id);
+      setCoupons(couponService.getCoupons());
+      setStatusMessage({ text: `Coupon "${code}" deleted.`, type: 'success' });
+      setTimeout(() => setStatusMessage(null), 2500);
+    }
+  };
+
+  const handleResetCoupons = () => {
+    if (window.confirm('Restore initial festive coupons (DIWALI2026, WELCOME10, etc.)?')) {
+      const reset = couponService.resetToDefaults();
+      setCoupons(reset);
+      setStatusMessage({ text: 'Coupons restored to defaults.', type: 'success' });
+      setTimeout(() => setStatusMessage(null), 2500);
+    }
+  };
+
   const handleResetDefaults = () => {
     if (window.confirm('Reset all catalog modifications and restore initial factory products?')) {
       catalogService.resetToDefaults();
@@ -223,9 +377,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#24140D]/10 flex items-center justify-between bg-white">
+        <div className="px-6 py-4 border-b border-[#24140D]/10 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#24140D] text-[#FAF7F2] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#24140D] text-[#FAF7F2] flex items-center justify-center shrink-0">
               <FolderTree className="w-4 h-4 text-[#C29B38]" />
             </div>
             <div>
@@ -247,49 +401,83 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 bg-[#FAF7F2] border-b border-[#24140D]/10 flex gap-4 text-xs font-semibold overflow-x-auto">
+        <div className="px-6 bg-[#FAF7F2] border-b border-[#24140D]/15 flex items-center gap-6 text-xs font-semibold overflow-x-auto shrink-0 scrollbar-none">
           <button
+            type="button"
             onClick={() => {
               setActiveTab('products');
               resetForm();
             }}
-            className={`py-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'products'
-                ? 'border-[#783A1D] text-[#783A1D]'
-                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D]'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
             }`}
           >
-            Products ({products.length})
+            <span>Products</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                activeTab === 'products'
+                  ? 'bg-[#783A1D]/10 text-[#783A1D]'
+                  : 'bg-[#24140D]/5 text-[#24140D]/60'
+              }`}
+            >
+              {products.length}
+            </span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('categories')}
-            className={`py-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap ${
               activeTab === 'categories'
-                ? 'border-[#783A1D] text-[#783A1D]'
-                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D]'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
             }`}
           >
             Category Architecture
           </button>
           <button
+            type="button"
+            onClick={() => setActiveTab('coupons')}
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'coupons'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
+            }`}
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            <span>Promotions & Coupons</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                activeTab === 'coupons'
+                  ? 'bg-[#783A1D]/10 text-[#783A1D]'
+                  : 'bg-[#24140D]/5 text-[#24140D]/60'
+              }`}
+            >
+              {coupons.length}
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setJsonText(catalogService.exportCatalogJSON());
               setActiveTab('json');
             }}
-            className={`py-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap ${
               activeTab === 'json'
-                ? 'border-[#783A1D] text-[#783A1D]'
-                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D]'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
             }`}
           >
             JSON Source Code
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('guide')}
-            className={`py-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap ${
               activeTab === 'guide'
-                ? 'border-[#783A1D] text-[#783A1D]'
-                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D]'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
             }`}
           >
             Owner Guide & Documentation
@@ -299,7 +487,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         {/* Status Toast */}
         {statusMessage && (
           <div
-            className={`px-6 py-2 text-xs font-medium flex items-center justify-between ${
+            className={`px-6 py-2.5 text-xs font-medium flex items-center justify-between shrink-0 ${
               statusMessage.type === 'success'
                 ? 'bg-emerald-50 text-emerald-800 border-b border-emerald-200'
                 : 'bg-red-50 text-red-800 border-b border-red-200'
@@ -311,7 +499,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         )}
 
         {/* Modal Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8">
 
           {/* TAB 1: PRODUCT LIST & EDITOR */}
           {activeTab === 'products' && (
@@ -421,6 +609,77 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       <p className="text-[10px] text-[#24140D]/60 mt-1">
                         Accepts any high-res URL. If left empty, our signature leather fallback art is displayed automatically.
                       </p>
+                    </div>
+
+                    {/* AI Luxury Story Generator Banner */}
+                    <div className="sm:col-span-2 p-4 rounded-xl bg-linear-to-r from-[#24140D] to-[#3D2013] text-[#FAF7F2] border border-[#C29B38]/40 shadow-sm space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#783A1D] flex items-center justify-center border border-[#C29B38]/50 shrink-0">
+                            <Sparkles className="w-4 h-4 text-[#C29B38]" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-serif text-sm font-bold text-[#FAF7F2]">
+                                AI Luxury Catalog Storyteller
+                              </h4>
+                              {aiVerified ? (
+                                <span className="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/50 flex items-center gap-1 font-sans">
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  Admin Verified & Approved
+                                </span>
+                              ) : (
+                                <span className="text-[10px] bg-[#C29B38]/20 text-[#D4B37A] px-2 py-0.5 rounded-full border border-[#C29B38]/30 font-sans">
+                                  Verification Enforced
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-[#D4B37A]">
+                              Auto-write heritage narratives, hand-bevel details, and care protocols from your item specs.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <select
+                            value={aiTone}
+                            onChange={(e: any) => setAiTone(e.target.value)}
+                            className="bg-[#1A0E09] text-[#FAF7F2] text-xs px-2.5 py-1.5 rounded-lg border border-[#C29B38]/30 focus:outline-none focus:border-[#C29B38] cursor-pointer"
+                          >
+                            <option value="regal">Regal & Heritage</option>
+                            <option value="heritage">Atelier Provenance</option>
+                            <option value="contemporary">Modern Minimalist</option>
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={handleTriggerAiStory}
+                            disabled={isGeneratingStory}
+                            className="px-3.5 py-1.5 bg-[#C29B38] hover:bg-[#D4B37A] text-[#24140D] font-bold text-xs rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                          >
+                            {isGeneratingStory ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Crafting Story...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="w-3.5 h-3.5" />
+                                <span>Generate Story</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {aiVerified && (
+                        <div className="p-2.5 rounded-lg bg-emerald-950/70 border border-emerald-600/40 text-[11px] text-emerald-200 flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>
+                            <strong>Verified by Admin:</strong> You have reviewed and approved this editorial story. Ready to publish to the live storefront.
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="sm:col-span-2">
@@ -564,33 +823,40 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               ) : (
                 /* Product Table View */
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#24140D]/10">
                     <div>
-                      <h3 className="font-serif text-xl font-bold text-[#24140D]">Active Products</h3>
-                      <p className="text-xs text-[#24140D]/60">Manage existing inventory, prices, and descriptions</p>
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="font-serif text-xl font-bold text-[#24140D]">Active Products</h3>
+                        <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-[#783A1D]/10 text-[#783A1D] border border-[#783A1D]/20">
+                          {products.length} Items Listed
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#24140D]/65 mt-0.5">
+                        Manage existing atelier inventory, catalog prices, product categories, and live availability
+                      </p>
                     </div>
                     <button
                       onClick={() => {
                         resetForm();
                         setIsAddingNew(true);
                       }}
-                      className="px-4 py-2 bg-[#783A1D] hover:bg-[#8F4725] text-[#FAF7F2] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      className="px-4 py-2 bg-[#783A1D] hover:bg-[#8F4725] text-[#FAF7F2] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 self-start sm:self-auto transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add New Product</span>
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto rounded-xl border border-[#24140D]/10 bg-white">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-[#FAF7F2] border-b border-[#24140D]/10 text-[#24140D]/60 uppercase tracking-wider text-[10px]">
+                  <div className="overflow-x-auto rounded-xl border border-[#24140D]/15 bg-white shadow-2xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="sticky top-0 z-10 bg-[#F5F0E8] border-b border-[#24140D]/15 text-[#24140D]/75 uppercase tracking-wider text-[10px] font-bold">
                         <tr>
-                          <th className="py-3 px-4">Item</th>
-                          <th className="py-3 px-4">Category</th>
-                          <th className="py-3 px-4">Type</th>
-                          <th className="py-3 px-4">Price</th>
-                          <th className="py-3 px-4">Status</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
+                          <th className="py-3 px-4 font-bold">Item</th>
+                          <th className="py-3 px-4 font-bold">Category</th>
+                          <th className="py-3 px-4 font-bold">Type</th>
+                          <th className="py-3 px-4 font-bold">Price</th>
+                          <th className="py-3 px-4 font-bold">Status</th>
+                          <th className="py-3 px-4 text-right font-bold">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#24140D]/5">
@@ -715,6 +981,267 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
           )}
 
+          {/* TAB: PROMOTIONS & FESTIVE OFFERS ENGINE */}
+          {activeTab === 'coupons' && (
+            <div className="space-y-6">
+              {/* Top Controls & Metrics */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#24140D]/10">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-[#24140D] flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-[#783A1D]" />
+                    <span>Promotional Coupons & Festive Offers Engine</span>
+                  </h3>
+                  <p className="text-xs text-[#24140D]/60">
+                    Configure luxury promotional codes, festive discounts (Diwali, New Year), minimum cart requirements, and usage caps.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsAddingCoupon(!isAddingCoupon)}
+                    className="px-4 py-2 rounded-lg bg-[#24140D] hover:bg-[#3D2013] text-[#FAF7F2] text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-4 h-4 text-[#C29B38]" />
+                    <span>{isAddingCoupon ? 'Close Form' : 'Create New Coupon'}</span>
+                  </button>
+                  <button
+                    onClick={handleResetCoupons}
+                    className="px-3 py-2 rounded-lg border border-[#24140D]/20 hover:bg-[#EFE9DF] text-xs font-medium text-[#24140D] cursor-pointer"
+                    title="Restore default festive coupons"
+                  >
+                    Restore Defaults
+                  </button>
+                </div>
+              </div>
+
+              {/* Metrics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#783A1D]">Total Coupons</span>
+                  <div className="text-xl font-mono font-bold text-[#24140D] mt-0.5">{coupons.length}</div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800">Active Live Codes</span>
+                  <div className="text-xl font-mono font-bold text-emerald-700 mt-0.5">
+                    {coupons.filter((c) => c.isActive).length}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#C29B38]">Total Patron Redemptions</span>
+                  <div className="text-xl font-mono font-bold text-[#24140D] mt-0.5">
+                    {coupons.reduce((sum, c) => sum + c.usageCount, 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Add New Coupon Form */}
+              {isAddingCoupon && (
+                <form
+                  onSubmit={handleCreateCoupon}
+                  className="p-5 rounded-xl bg-white border border-[#783A1D]/30 shadow-sm space-y-4 animate-in fade-in duration-200"
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-[#24140D]/10">
+                    <span className="text-xs font-serif font-bold text-[#24140D] uppercase tracking-wider">
+                      New Promotional Coupon
+                    </span>
+                    <span className="text-[11px] text-[#783A1D]">Direct Client-Side & Checkout Integration</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">Coupon Code *</label>
+                      <input
+                        type="text"
+                        required
+                        value={cpnCode}
+                        onChange={(e) => setCpnCode(e.target.value.toUpperCase())}
+                        placeholder="e.g. DIWALI2026"
+                        className="w-full px-3 py-2 text-xs font-mono font-bold uppercase bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">Discount Type</label>
+                      <select
+                        value={cpnType}
+                        onChange={(e) => setCpnType(e.target.value as any)}
+                        className="w-full px-3 py-2 text-xs bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      >
+                        <option value="percentage">Percentage Discount (%)</option>
+                        <option value="flat">Flat Rupee Amount (₹)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">
+                        {cpnType === 'percentage' ? 'Percentage (e.g. 15 for 15%)' : 'Amount in INR (₹)'} *
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={cpnValue}
+                        onChange={(e) => setCpnValue(Number(e.target.value))}
+                        className="w-full px-3 py-2 text-xs font-mono bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">Min. Bag Value (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={cpnMinOrder}
+                        onChange={(e) => setCpnMinOrder(Number(e.target.value))}
+                        className="w-full px-3 py-2 text-xs font-mono bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">
+                        Max Cap (₹) {cpnType === 'flat' && '(N/A)'}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        disabled={cpnType === 'flat'}
+                        value={cpnMaxCap}
+                        onChange={(e) => setCpnMaxCap(Number(e.target.value))}
+                        className="w-full px-3 py-2 text-xs font-mono bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] disabled:opacity-40"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">Max Redemptions Limit</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={cpnLimit}
+                        onChange={(e) => setCpnLimit(Number(e.target.value))}
+                        className="w-full px-3 py-2 text-xs font-mono bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#24140D] mb-1">Badge Tag</label>
+                      <input
+                        type="text"
+                        value={cpnBadge}
+                        onChange={(e) => setCpnBadge(e.target.value)}
+                        placeholder="e.g. Festive Offer"
+                        className="w-full px-3 py-2 text-xs bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#24140D] mb-1">Description / Customer Benefit Note</label>
+                    <input
+                      type="text"
+                      value={cpnDesc}
+                      onChange={(e) => setCpnDesc(e.target.value)}
+                      placeholder="e.g. 15% off on handcrafted heirloom leather goods for Diwali"
+                      className="w-full px-3 py-2 text-xs bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCoupon(false)}
+                      className="px-4 py-2 rounded-lg border border-[#24140D]/20 text-xs font-medium text-[#24140D] hover:bg-[#EFE9DF] cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-lg bg-[#24140D] hover:bg-[#3D2013] text-[#FAF7F2] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Save & Activate Coupon
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Coupons List */}
+              <div className="space-y-3">
+                {coupons.map((coupon) => (
+                  <div
+                    key={coupon.id}
+                    className="p-4 rounded-xl bg-white border border-[#24140D]/10 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-sm font-bold text-[#24140D] bg-[#EFE9DF] px-2.5 py-1 rounded border border-[#24140D]/15 tracking-wider">
+                          {coupon.code}
+                        </span>
+                        {coupon.badge && (
+                          <span className="text-[10px] uppercase font-semibold text-[#783A1D] bg-[#FAF7F2] px-2 py-0.5 rounded border border-[#783A1D]/30">
+                            {coupon.badge}
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                            coupon.isActive
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
+                          }`}
+                        >
+                          {coupon.isActive ? 'Active' : 'Paused'}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-[#24140D]/80">{coupon.description}</p>
+
+                      <div className="flex items-center gap-4 text-[11px] text-[#24140D]/60 pt-1 flex-wrap">
+                        <span>
+                          Benefit: <strong className="text-[#24140D]">
+                            {coupon.discountType === 'percentage'
+                              ? `${coupon.discountValue}% Off${coupon.maxDiscountCap ? ` (Cap: ₹${coupon.maxDiscountCap.toLocaleString('en-IN')})` : ''}`
+                              : `Flat ₹${coupon.discountValue.toLocaleString('en-IN')} Off`}
+                          </strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Min. Bag: <strong className="text-[#24140D]">₹{coupon.minOrderValue.toLocaleString('en-IN')}</strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Redemptions: <strong className="text-[#24140D] font-mono">{coupon.usageCount}</strong>
+                          {coupon.usageLimit && ` / ${coupon.usageLimit}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleToggleCoupon(coupon.id)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                          coupon.isActive
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                            : 'border-neutral-300 bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                        }`}
+                      >
+                        {coupon.isActive ? <ToggleRight className="w-4 h-4 text-emerald-700" /> : <ToggleLeft className="w-4 h-4" />}
+                        <span>{coupon.isActive ? 'Active' : 'Inactive'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteCoupon(coupon.id, coupon.code)}
+                        className="p-1.5 rounded-lg text-[#24140D]/40 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete coupon"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* TAB 3: JSON SOURCE CODE */}
           {activeTab === 'json' && (
             <div className="space-y-4">
@@ -808,6 +1335,173 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
         </div>
       </div>
+
+      {/* AI STORY REVIEW & ADMIN VERIFICATION DIALOG */}
+      {showAiVerificationModal && (
+        <div className="fixed inset-0 z-60 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div
+            className="relative w-full max-w-3xl bg-[#FAF7F2] rounded-2xl shadow-2xl overflow-hidden border border-[#C29B38]/50 max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Verification Header */}
+            <div className="px-6 py-4 bg-[#24140D] text-[#FAF7F2] border-b border-[#C29B38]/30 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#783A1D] flex items-center justify-center border border-[#C29B38] text-[#C29B38]">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-serif text-base font-bold text-[#FAF7F2]">
+                      Admin Verification: Luxury Story Draft
+                    </h3>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 uppercase font-mono font-semibold">
+                      Pending Verification
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#D4B37A]">
+                    Review & edit before approving for live catalog publication
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAiVerificationModal(false)}
+                className="p-1.5 rounded-lg text-[#FAF7F2]/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close verification modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Verification Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs text-[#24140D]">
+              
+              {/* Notice */}
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <strong>Verification Requirement:</strong> Review the AI-generated luxury story below. You can tweak or rewrite any section. <em>This story will NOT be published until you click &quot;Approve &amp; Apply to Product&quot; below.</em>
+                </div>
+              </div>
+
+              {/* Editable Short Hook */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-[#24140D] uppercase text-[10px] tracking-wider">
+                  1. Luxury Summary Hook (for Catalog Cards)
+                </label>
+                <input
+                  type="text"
+                  value={editableDraft.shortDescription}
+                  onChange={(e) =>
+                    setEditableDraft({ ...editableDraft, shortDescription: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] text-xs"
+                />
+              </div>
+
+              {/* Editable Detailed Story */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-[#24140D] uppercase text-[10px] tracking-wider">
+                  2. Evocative Product Narrative &amp; Provenance
+                </label>
+                <textarea
+                  rows={6}
+                  value={editableDraft.description}
+                  onChange={(e) =>
+                    setEditableDraft({ ...editableDraft, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] text-xs leading-relaxed"
+                />
+              </div>
+
+              {/* Editable Features */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-[#24140D] uppercase text-[10px] tracking-wider">
+                  3. Key Craft Highlights (one per line)
+                </label>
+                <textarea
+                  rows={4}
+                  value={editableDraft.features.join('\n')}
+                  onChange={(e) =>
+                    setEditableDraft({
+                      ...editableDraft,
+                      features: e.target.value.split('\n').filter((f) => f.trim().length > 0)
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] text-xs font-mono"
+                />
+              </div>
+
+              {/* Editable Care Instructions & Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block font-bold text-[#24140D] uppercase text-[10px] tracking-wider">
+                    4. Indian Climate Care Protocols
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editableDraft.careInstructions || ''}
+                    onChange={(e) =>
+                      setEditableDraft({ ...editableDraft, careInstructions: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block font-bold text-[#24140D] uppercase text-[10px] tracking-wider">
+                    5. Suggested Luxury Editorial Badge
+                  </label>
+                  <input
+                    type="text"
+                    value={editableDraft.suggestedBadge || ''}
+                    onChange={(e) =>
+                      setEditableDraft({ ...editableDraft, suggestedBadge: e.target.value })
+                    }
+                    placeholder="e.g. Masterpiece, Atelier Signature"
+                    className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] text-xs"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Verification Footer Actions */}
+            <div className="px-6 py-4 bg-[#EFE9DF] border-t border-[#24140D]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAiVerificationModal(false)}
+                className="px-4 py-2 rounded-lg border border-[#24140D]/20 hover:bg-[#FAF7F2] text-xs font-semibold cursor-pointer"
+              >
+                Discard Draft
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTriggerAiStory}
+                  disabled={isGeneratingStory}
+                  className="px-3.5 py-2 rounded-lg bg-white border border-[#24140D]/20 hover:bg-[#FAF7F2] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingStory ? 'animate-spin' : ''}`} />
+                  <span>Regenerate</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleApproveAiStory}
+                  className="px-5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+                >
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Approve &amp; Apply to Product</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

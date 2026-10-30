@@ -1,6 +1,7 @@
-import React from 'react';
-import { CartItem } from '../types';
-import { X, Trash2, ArrowRight, ShieldCheck, Sparkles, ShoppingBag } from 'lucide-react';
+import React, { useState } from 'react';
+import { CartItem, Coupon } from '../types';
+import { couponService } from '../services/couponService';
+import { X, Trash2, ArrowRight, ShieldCheck, Sparkles, ShoppingBag, Ticket, CheckCircle2, Tag } from 'lucide-react';
 import { ProductImage } from './ProductImage';
 
 interface CartDrawerProps {
@@ -23,6 +24,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onCheckout
 }) => {
   if (!isOpen) return null;
+
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState<{ text: string; success: boolean } | null>(null);
+
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const progressToFreeShipping = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
@@ -170,6 +177,102 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         {/* Drawer Footer */}
         {items.length > 0 && (
           <div className="p-6 border-t border-[#24140D]/10 bg-white space-y-4">
+            
+            {/* Promotional Voucher Module */}
+            <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#24140D]/10 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-[#24140D]">
+                <span className="flex items-center gap-1.5">
+                  <Ticket className="w-3.5 h-3.5 text-[#783A1D]" />
+                  <span>Promotional Voucher</span>
+                </span>
+                {appliedCoupon && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedCoupon(null);
+                      setDiscountAmount(0);
+                      setCouponInput('');
+                      setCouponMessage(null);
+                    }}
+                    className="text-[11px] text-red-700 hover:underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              {!appliedCoupon ? (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. DIWALI2026"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      className="flex-1 px-3 py-1.5 text-xs font-mono font-medium uppercase bg-white border border-[#24140D]/20 rounded-md focus:outline-none focus:border-[#783A1D]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const res = couponService.validateCoupon(couponInput, subtotal);
+                        if (res.isValid && res.coupon) {
+                          setAppliedCoupon(res.coupon);
+                          setDiscountAmount(res.discountAmount);
+                          setCouponMessage({ text: res.message, success: true });
+                        } else {
+                          setAppliedCoupon(null);
+                          setDiscountAmount(0);
+                          setCouponMessage({ text: res.message, success: false });
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-[#24140D] hover:bg-[#3D2013] text-[#FAF7F2] text-xs font-semibold rounded-md transition-colors cursor-pointer"
+                    >
+                      Apply
+                    </button>
+                  </div>
+
+                  {/* Quick-apply active festive offers */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span className="text-[10px] uppercase font-semibold text-[#783A1D]">Festive:</span>
+                    {couponService.getActiveCoupons().slice(0, 2).map((cpn) => (
+                      <button
+                        key={cpn.code}
+                        type="button"
+                        onClick={() => {
+                          setCouponInput(cpn.code);
+                          const res = couponService.validateCoupon(cpn.code, subtotal);
+                          if (res.isValid && res.coupon) {
+                            setAppliedCoupon(res.coupon);
+                            setDiscountAmount(res.discountAmount);
+                            setCouponMessage({ text: res.message, success: true });
+                          } else {
+                            setCouponMessage({ text: res.message, success: false });
+                          }
+                        }}
+                        className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white border border-[#24140D]/15 hover:border-[#783A1D] text-[#24140D] cursor-pointer"
+                      >
+                        {cpn.code} ({cpn.discountType === 'percentage' ? `${cpn.discountValue}%` : `₹${cpn.discountValue}`})
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 p-2 rounded-lg">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Code <strong>{appliedCoupon.code}</strong> applied</span>
+                  </div>
+                  <span className="font-mono font-bold">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {couponMessage && !appliedCoupon && (
+                <p className={`text-[11px] ${couponMessage.success ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  {couponMessage.text}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1.5 text-xs text-[#24140D]/80">
               <div className="flex justify-between">
                 <span>Subtotal</span>
@@ -177,6 +280,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   ₹{subtotal.toLocaleString('en-IN')}
                 </span>
               </div>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-700 font-medium">
+                  <span>Promotional Discount</span>
+                  <span className="font-mono tabular-nums">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span>Insured Express Shipping</span>
                 <span className="font-mono tabular-nums">
@@ -187,10 +298,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   )}
                 </span>
               </div>
+              
               <div className="flex justify-between font-serif text-base font-bold text-[#24140D] pt-2 border-t border-[#24140D]/10">
                 <span>Estimated Total</span>
                 <span className="font-mono tabular-nums">
-                  ₹{(subtotal + (subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 250)).toLocaleString('en-IN')}
+                  ₹{(Math.max(0, subtotal - discountAmount) + (subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 250)).toLocaleString('en-IN')}
                 </span>
               </div>
             </div>

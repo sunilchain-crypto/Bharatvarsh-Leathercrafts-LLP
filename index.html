@@ -9,6 +9,46 @@
     <meta property="og:description" content="Bespoke handcrafted luxury leather goods. Timeless vegetable-tanned full-grain belts, wallets, briefcases, and bags by Bharatvarsh Leathercrafts LLP." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Suppress benign Vite HMR WebSocket connection errors in AI Studio iframe environment
+      (function() {
+        window.addEventListener('error', function(event) {
+          if (
+            (event.filename && event.filename.indexOf('@vite/client') !== -1) ||
+            (event.message && (
+              event.message.indexOf('WebSocket') !== -1 ||
+              event.message.indexOf('ws://') !== -1 ||
+              event.message.indexOf('wss://') !== -1
+            ))
+          ) {
+            if (typeof event.stopImmediatePropagation === 'function') {
+              event.stopImmediatePropagation();
+            }
+            if (typeof event.preventDefault === 'function') {
+              event.preventDefault();
+            }
+            return true;
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason;
+          var reasonStr = String(reason || '');
+          var stackStr = String((reason && reason.stack) || '');
+          if (
+            reasonStr.indexOf('WebSocket') !== -1 ||
+            reasonStr.indexOf('@vite/client') !== -1 ||
+            stackStr.indexOf('@vite/client') !== -1
+          ) {
+            if (typeof event.stopImmediatePropagation === 'function') {
+              event.stopImmediatePropagation();
+            }
+            if (typeof event.preventDefault === 'function') {
+              event.preventDefault();
+            }
+          }
+        });
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">

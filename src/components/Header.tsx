@@ -14,6 +14,7 @@ interface HeaderProps {
   onOpenCorporate: () => void;
   onOpenAdmin: () => void;
   onScrollToStory: () => void;
+  onScrollToStories?: () => void;
   isCorporateView?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCorporate,
   onOpenAdmin,
   onScrollToStory,
+  onScrollToStories,
   isCorporateView = false
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -131,6 +133,13 @@ export const Header: React.FC<HeaderProps> = ({
             title="Institutional & Corporate Gifting with Indian GST Quotations"
           >
             Corporate
+          </button>
+          <button
+            onClick={onScrollToStories}
+            className="transition-colors whitespace-nowrap shrink-0 cursor-pointer hover:text-[#783A1D] py-1"
+            title="Verified patron stories & leather patina photos"
+          >
+            Patron Wall
           </button>
           <button
             onClick={onOpenAccount}
@@ -264,6 +273,18 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
               <span className="text-xs bg-[#EFE9DF] px-2 py-0.5 rounded font-mono font-bold">
                 {ordersCount}
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (onScrollToStories) onScrollToStories();
+              }}
+              className="text-left font-medium py-1 text-[#24140D] flex items-center justify-between"
+            >
+              <span>Patron Chronicles & Patina Wall</span>
+              <span className="text-[10px] bg-emerald-50 text-emerald-800 font-semibold px-2 py-0.5 rounded border border-emerald-200">
+                ★ 4.9 Reviews
               </span>
             </button>
             <button

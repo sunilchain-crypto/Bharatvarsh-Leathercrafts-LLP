@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { ProductImage } from './ProductImage';
-import { X, Check, Shield, Sparkles, Feather, Clock, ShoppingBag, Truck, Bookmark } from 'lucide-react';
+import { PincodeEstimator } from './PincodeEstimator';
+import { reviewService } from '../services/reviewService';
+import { X, Check, Shield, Sparkles, Feather, Clock, ShoppingBag, Truck, Bookmark, Star, Camera, CheckCircle2 } from 'lucide-react';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -10,6 +12,8 @@ interface ProductDetailModalProps {
   onBuyNow: (product: Product, selectedColor: string, monogramText?: string, quantity?: number) => void;
   onToggleWishlist?: (product: Product, selectedColor: string, monogramText?: string) => void;
   isInWishlist?: boolean;
+  onViewPatronWall?: () => void;
+  onOpenConcierge?: () => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -18,7 +22,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onAddToCart,
   onBuyNow,
   onToggleWishlist,
-  isInWishlist = false
+  isInWishlist = false,
+  onViewPatronWall,
+  onOpenConcierge
 }) => {
   if (!product) return null;
 
@@ -26,7 +32,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.name || 'Standard');
   const [monogramText, setMonogramText] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'care'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'care' | 'reviews'>('details');
+
+  const productReviews = reviewService.getReviewsForProduct(product.id);
+  const stats = reviewService.getReviewStats(product.id);
 
   const handleAddToCart = () => {
     onAddToCart(product, selectedColor, monogramText.trim() ? monogramText.toUpperCase() : undefined, quantity);
@@ -126,6 +135,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#24140D] leading-tight">
                   {product.name}
                 </h2>
+                
+                {/* Patron Rating & Patina summary */}
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <div className="flex items-center text-[#C29B38]">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-[#24140D] font-mono">4.9 / 5</span>
+                  <span className="text-xs text-[#24140D]/40">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('reviews')}
+                    className="text-xs text-[#783A1D] hover:underline cursor-pointer font-medium"
+                  >
+                    {productReviews.length > 0 ? `${productReviews.length} Patron Chronicles` : 'Verified Artisan Quality'}
+                  </button>
+                  <span className="text-xs text-[#24140D]/40">·</span>
+                  <span className="text-[11px] text-emerald-800 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                    Real Patina Tested
+                  </span>
+                </div>
+
                 <div className="mt-3 flex items-baseline gap-3">
                   <span className="text-2xl font-bold text-[#24140D] font-mono tabular-nums">
                     ₹{product.price.toLocaleString('en-IN')}
@@ -252,14 +284,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 >
                   Proceed to Immediate Checkout
                 </button>
+
+                {/* Atelier Concierge Quick Sizing & Care trigger */}
+                {onOpenConcierge && (
+                  <button
+                    type="button"
+                    onClick={onOpenConcierge}
+                    className="w-full py-2.5 px-3 rounded-lg bg-[#FAF7F2] border border-[#C29B38]/60 hover:bg-[#EFE9DF] text-[#783A1D] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#C29B38] group-hover:scale-110 transition-transform" />
+                    <span>Consult Atelier Concierge on Sizing & Leather Care</span>
+                  </button>
+                )}
               </div>
 
-              {/* Specifications & Care Tabs */}
+              {/* Real-time Indian Logistics & Pincode Checker */}
+              <PincodeEstimator className="mt-2" />
+
+              {/* Specifications, Care & Patron Reviews Tabs */}
               <div className="pt-4 border-t border-[#24140D]/10 space-y-3">
-                <div className="flex items-center gap-4 border-b border-[#24140D]/10 text-xs">
+                <div className="flex items-center gap-3 border-b border-[#24140D]/10 text-xs overflow-x-auto pb-1">
                   <button
                     onClick={() => setActiveTab('details')}
-                    className={`pb-2 font-semibold transition-colors cursor-pointer ${
+                    className={`pb-2 font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                       activeTab === 'details'
                         ? 'text-[#783A1D] border-b-2 border-[#783A1D]'
                         : 'text-[#24140D]/60 hover:text-[#24140D]'
@@ -269,7 +316,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </button>
                   <button
                     onClick={() => setActiveTab('specs')}
-                    className={`pb-2 font-semibold transition-colors cursor-pointer ${
+                    className={`pb-2 font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                       activeTab === 'specs'
                         ? 'text-[#783A1D] border-b-2 border-[#783A1D]'
                         : 'text-[#24140D]/60 hover:text-[#24140D]'
@@ -279,13 +326,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </button>
                   <button
                     onClick={() => setActiveTab('care')}
-                    className={`pb-2 font-semibold transition-colors cursor-pointer ${
+                    className={`pb-2 font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                       activeTab === 'care'
                         ? 'text-[#783A1D] border-b-2 border-[#783A1D]'
                         : 'text-[#24140D]/60 hover:text-[#24140D]'
                     }`}
                   >
                     Leather Care
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reviews')}
+                    className={`pb-2 font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      activeTab === 'reviews'
+                        ? 'text-[#783A1D] border-b-2 border-[#783A1D]'
+                        : 'text-[#24140D]/60 hover:text-[#24140D]'
+                    }`}
+                  >
+                    <span>Patina Reviews</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#EFE9DF] text-[#783A1D] font-mono">
+                      {productReviews.length}
+                    </span>
                   </button>
                 </div>
 
@@ -322,6 +382,59 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {product.careInstructions ||
                       'Condition with natural beeswax and neatsfoot balm every six months. Avoid direct immersion in water. Store in the supplied cotton dust bag.'}
                   </p>
+                )}
+
+                {activeTab === 'reviews' && (
+                  <div className="space-y-3">
+                    {productReviews.length === 0 ? (
+                      <div className="p-4 rounded-lg bg-[#EFE9DF]/40 border border-[#24140D]/10 text-center space-y-2">
+                        <p className="text-xs text-[#24140D]/70">
+                          Be the first patron to document the patina of this handcrafted piece!
+                        </p>
+                        {onViewPatronWall && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onViewPatronWall();
+                            }}
+                            className="text-xs text-[#783A1D] font-semibold underline cursor-pointer"
+                          >
+                            Explore All Patron Chronicles & Patina Wall
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {productReviews.slice(0, 2).map((rev) => (
+                          <div key={rev.id} className="p-3 rounded-lg bg-white border border-[#24140D]/10 space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-[#24140D]">{rev.authorName}</span>
+                              <span className="text-[10px] text-[#783A1D] font-mono font-medium">
+                                {rev.monthsOfUse} mo. carry · {rev.patinaGrade}
+                              </span>
+                            </div>
+                            <h5 className="font-serif text-xs font-bold text-[#24140D]">"{rev.title}"</h5>
+                            <p className="text-[11px] text-[#24140D]/80 leading-relaxed line-clamp-3 italic">
+                              {rev.story}
+                            </p>
+                          </div>
+                        ))}
+                        {onViewPatronWall && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onViewPatronWall();
+                            }}
+                            className="w-full py-2 rounded-lg bg-[#EFE9DF] hover:bg-[#E2DACD] text-xs font-semibold text-[#783A1D] transition-colors cursor-pointer text-center"
+                          >
+                            View All Patron Photos & Chronicles Wall →
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 

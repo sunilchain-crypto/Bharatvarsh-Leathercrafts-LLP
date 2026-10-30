@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { CartItem, CustomerDetails, Order } from '../types';
+import React, { useState, useEffect } from 'react';
+import { CartItem, CustomerDetails, Order, Coupon, PincodeLogisticsInfo } from '../types';
 import { paymentService, PaymentResult } from '../services/paymentService';
+import { couponService } from '../services/couponService';
+import { logisticsService } from '../services/logisticsService';
 import {
   X,
   ShieldCheck,
@@ -12,7 +14,9 @@ import {
   Printer,
   Sparkles,
   Info,
-  Package
+  Package,
+  Truck,
+  Ticket
 } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -58,30 +62,57 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'stripe' | 'cod'>('razorpay');
   const [couponCode, setCouponCode] = useState('');
-  const [discountPercent, setDiscountPercent] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const [couponMessage, setCouponMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // Real-time Indian logistics lookup based on customer pincode
+  const [logisticsInfo, setLogisticsInfo] = useState<PincodeLogisticsInfo | null>(() => {
+    return logisticsService.isValidIndianPincode(customer.pincode)
+      ? logisticsService.lookupPincode(customer.pincode)
+      : null;
+  });
+
+  useEffect(() => {
+    if (logisticsService.isValidIndianPincode(customer.pincode)) {
+      setLogisticsInfo(logisticsService.lookupPincode(customer.pincode));
+    } else {
+      setLogisticsInfo(null);
+    }
+  }, [customer.pincode]);
+
   // Math calculations
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const shipping = subtotal >= 2999 ? 0 : 250;
-  const taxableSubtotal = subtotal - discountAmount;
+  const taxableSubtotal = Math.max(0, subtotal - discountAmount);
   const total = taxableSubtotal + shipping;
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (couponCode.trim().toUpperCase() === 'HERITAGE10') {
-      setDiscountPercent(10);
-      setCouponMessage('10% Heritage inaugural discount applied!');
-    } else if (couponCode.trim().toUpperCase() === 'BLCLLP') {
-      setDiscountPercent(15);
-      setCouponMessage('15% Artisan appreciation discount applied!');
+  const handleApplyCoupon = (e?: React.FormEvent, codeToUse?: string) => {
+    if (e) e.preventDefault();
+    const code = (codeToUse || couponCode).trim();
+    if (!code) return;
+
+    const res = couponService.validateCoupon(code, subtotal);
+    if (res.isValid && res.coupon) {
+      setAppliedCoupon(res.coupon);
+      setDiscountAmount(res.discountAmount);
+      setCouponMessage(res.message);
+      setCouponCode(res.coupon.code);
     } else {
-      setCouponMessage('Invalid coupon code. Try HERITAGE10');
+      setAppliedCoupon(null);
+      setDiscountAmount(0);
+      setCouponMessage(res.message);
     }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    setCouponCode('');
+    setCouponMessage('');
   };
 
   const handlePayNow = async (e: React.FormEvent) => {
@@ -104,7 +135,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       paymentMethod,
       paymentStatus: 'pending',
       createdAt: new Date().toISOString(),
-      status: 'Atelier Crafting'
+      status: 'Atelier Crafting',
+      estimatedDelivery: logisticsInfo?.estimatedDeliveryDate,
+      courierName: logisticsInfo?.courierPartner
     };
 
     try {
@@ -113,6 +146,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (result.success) {
         newOrder.paymentStatus = 'paid';
         newOrder.paymentId = result.transactionId;
+        
+        // Record coupon usage if applied
+        if (appliedCoupon) {
+          couponService.recordCouponUsage(appliedCoupon.code);
+        }
+
         setConfirmedOrder(newOrder);
         onOrderSuccess(newOrder);
       } else {
@@ -340,8 +379,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       maxLength={6}
                       value={customer.pincode}
                       onChange={(e) => setCustomer({ ...customer, pincode: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                      className="w-full px-3 py-2 bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D] font-mono"
                     />
+                    {logisticsInfo && logisticsInfo.isServiceable && (
+                      <div className="mt-1.5 p-2 rounded-lg bg-[#EFE9DF]/60 border border-[#24140D]/10 text-[11px] text-[#24140D]/80 space-y-0.5">
+                        <div className="flex items-center gap-1.5 font-semibold text-[#783A1D]">
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>Estimated: {logisticsInfo.estimatedDeliveryDate}</span>
+                        </div>
+                        <p className="text-[10px] text-[#24140D]/60">
+                          Dispatched via {logisticsInfo.courierPartner} to {logisticsInfo.city}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -514,25 +564,69 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
 
                   {/* Coupon Box */}
-                  <div className="pt-3 border-t border-[#24140D]/10">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Coupon: HERITAGE10"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        className="flex-1 px-3 py-1.5 text-xs uppercase bg-[#FAF7F2] border border-[#24140D]/20 rounded-md focus:outline-none focus:border-[#783A1D]"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyCoupon}
-                        className="px-3 py-1.5 bg-[#24140D] text-[#FAF7F2] text-xs font-semibold rounded-md hover:bg-[#3D2013] transition-colors cursor-pointer"
-                      >
-                        Apply
-                      </button>
+                  <div className="pt-3 border-t border-[#24140D]/10 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-[#24140D]">
+                      <span className="flex items-center gap-1.5">
+                        <Ticket className="w-3.5 h-3.5 text-[#783A1D]" />
+                        <span>Promotional Coupon</span>
+                      </span>
+                      {appliedCoupon && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-[11px] text-red-700 hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
-                    {couponMessage && (
-                      <p className={`text-[11px] mt-1.5 ${discountPercent > 0 ? 'text-emerald-700 font-semibold' : 'text-amber-700'}`}>
+
+                    {!appliedCoupon ? (
+                      <>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="e.g. DIWALI2026"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            className="flex-1 px-3 py-1.5 text-xs font-mono uppercase bg-[#FAF7F2] border border-[#24140D]/20 rounded-md focus:outline-none focus:border-[#783A1D]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleApplyCoupon()}
+                            className="px-3.5 py-1.5 bg-[#24140D] text-[#FAF7F2] text-xs font-semibold rounded-md hover:bg-[#3D2013] transition-colors cursor-pointer"
+                          >
+                            Apply
+                          </button>
+                        </div>
+
+                        {/* Quick-select active festive offers */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          <span className="text-[10px] uppercase font-semibold text-[#783A1D]">Offers:</span>
+                          {couponService.getActiveCoupons().slice(0, 3).map((cpn) => (
+                            <button
+                              key={cpn.code}
+                              type="button"
+                              onClick={() => handleApplyCoupon(undefined, cpn.code)}
+                              className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#FAF7F2] border border-[#24140D]/15 hover:border-[#783A1D] text-[#24140D] cursor-pointer"
+                            >
+                              {cpn.code} ({cpn.discountType === 'percentage' ? `${cpn.discountValue}%` : `₹${cpn.discountValue}`})
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 p-2 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Code <strong>{appliedCoupon.code}</strong> applied</span>
+                        </div>
+                        <span className="font-mono font-bold">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+
+                    {couponMessage && !appliedCoupon && (
+                      <p className="text-[11px] text-amber-800 leading-tight">
                         {couponMessage}
                       </p>
                     )}
@@ -547,7 +641,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                     {discountAmount > 0 && (
                       <div className="flex justify-between text-emerald-700 font-medium">
-                        <span>Discount ({discountPercent}%)</span>
+                        <span>Promotional Discount {appliedCoupon && `(${appliedCoupon.code})`}</span>
                         <span className="font-mono tabular-nums">-₹{discountAmount.toLocaleString('en-IN')}</span>
                       </div>
                     )}

@@ -148,35 +148,53 @@ VITE_STRIPE_PUBLISHABLE_KEY="pk_live_your_actual_key_here"`}
             </div>
           </div>
 
+          {/* Section: AI Features & Admin Verification */}
+          <div className="p-5 rounded-xl bg-white border border-[#24140D]/10 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-[#24140D]/10 pb-3">
+              <h4 className="font-serif text-base font-bold text-[#24140D] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#C29B38]" />
+                <span>3. AI Storyteller &amp; Patron Concierge (Gemini 3.8 Flash)</span>
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#24140D]/10 space-y-1.5">
+                <strong className="text-[#24140D] block font-semibold">Store Manager AI Storyteller (Admin CMS)</strong>
+                <p className="text-[11px] text-[#24140D]/70">
+                  Located in the Admin CMS Product form. Enter basic titles, leather types, and hardware specs, then click <em>Generate Story</em>. <strong>Admin verification is strictly enforced:</strong> stories open in an interactive review modal allowing edits, and only publish after you click <em>&quot;Approve &amp; Apply to Product&quot;</em>.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#24140D]/10 space-y-1.5">
+                <strong className="text-[#24140D] block font-semibold">Customer Sizing &amp; Care Concierge</strong>
+                <p className="text-[11px] text-[#24140D]/70">
+                  A floating luxury concierge accessible across product pages. Guides buyers on belt sizing rules (+2 inches over trouser waist), vegetable-tanned leather care during Indian monsoons, and bespoke 22k gold monogramming.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Section 4: Architecture */}
           <div className="p-5 rounded-xl bg-white border border-[#24140D]/10 space-y-3 shadow-xs">
             <h4 className="font-serif text-base font-bold text-[#24140D] flex items-center gap-2">
               <Terminal className="w-4 h-4 text-[#783A1D]" />
-              <span>3. Project Source Architecture</span>
+              <span>4. Project Source Architecture</span>
             </h4>
             <pre className="p-3 bg-[#FAF7F2] text-[#24140D] font-mono text-[11px] rounded-lg border border-[#24140D]/10 overflow-x-auto">
-{`src/
-├── components/
-│   ├── Header.tsx              # Top Bar Contract (Wordmark, Nav links, Bag)
-│   ├── Hero.tsx                # Brand focal point & quick category jumps
-│   ├── CatalogSection.tsx      # Filterable grid, unlimited items & types
-│   ├── ProductCard.tsx         # Luxury card with image, colors & quick add
-│   ├── ProductImage.tsx        # Resilient Zero-Broken-Image fallback
-│   ├── ProductDetailModal.tsx  # Gallery, swatches, monogramming & specs
-│   ├── CartDrawer.tsx          # Slide-over cart with free shipping bar
-│   ├── CheckoutModal.tsx       # Multi-step checkout & payment receipt
-│   ├── AdminPanelModal.tsx     # Owner catalog CMS & JSON editor
-│   ├── PaymentSettingsModal.tsx# Razorpay / Stripe gateway settings
-│   ├── BrandStory.tsx          # Full-grain veg-tan craftsmanship narrative
-│   └── Footer.tsx              # Legal LLP notice & store operations
-├── data/
-│   ├── initialCatalog.ts       # Structured catalog source
-│   └── products.json           # JSON catalog data format
-├── services/
-│   ├── catalogService.ts       # Persistent local storage & JSON CRUD
-│   └── paymentService.ts       # Isolated payment gateway integration layer
-└── types/
-    └── index.ts                # Strict TypeScript interfaces`}
+{`├── server.ts                   # Express server with Vite dev middleware & Gemini API routes
+├── src/
+│   ├── components/
+│   │   ├── LeatherConciergeWidget.tsx # Floating Sizing & Care AI Concierge
+│   │   ├── AdminPanelModal.tsx        # Catalog CMS with AI Story Generator & Admin Review
+│   │   ├── ProductDetailModal.tsx     # Gallery, specs, and concierge consultation trigger
+│   │   ├── CartDrawer.tsx             # Slide-over cart with coupons & free shipping bar
+│   │   ├── CheckoutModal.tsx          # Multi-step checkout & payment receipt
+│   │   └── ...
+│   ├── services/
+│   │   ├── aiService.ts               # Gemini client integration for Story & Concierge
+│   │   ├── catalogService.ts          # Persistent catalog CRUD
+│   │   └── couponService.ts           # Festive discount codes & promotional engine
+│   └── types/                         # Strict TypeScript interfaces`}
             </pre>
           </div>
 

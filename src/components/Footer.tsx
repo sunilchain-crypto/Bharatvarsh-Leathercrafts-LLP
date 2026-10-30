@@ -110,6 +110,12 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2 text-xs text-[#EFE9DF]/80">
               <li>
+                <a href="#patron-stories" className="hover:text-[#FAF7F2] transition-colors flex items-center gap-1.5 text-[#C29B38]">
+                  <span>★</span>
+                  <span className="text-[#FAF7F2] font-semibold">Patron Patina Wall & Reviews</span>
+                </a>
+              </li>
+              <li>
                 <a href="#craftsmanship-story" className="hover:text-[#FAF7F2] transition-colors">
                   Full-Grain Vegetable Tanning
                 </a>
@@ -122,11 +128,6 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a href="#craftsmanship-story" className="hover:text-[#FAF7F2] transition-colors">
                   Solid Cast Brass Castings
-                </a>
-              </li>
-              <li>
-                <a href="#craftsmanship-story" className="hover:text-[#FAF7F2] transition-colors">
-                  Natural Patina Guide
                 </a>
               </li>
             </ul>

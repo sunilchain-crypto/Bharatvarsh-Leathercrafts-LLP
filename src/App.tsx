@@ -16,6 +16,8 @@ import { PaymentSettingsModal } from './components/PaymentSettingsModal';
 import { SetupGuideModal } from './components/SetupGuideModal';
 import { CorporateGiftingView } from './components/CorporateGiftingView';
 import { BrandStory } from './components/BrandStory';
+import { PatronStoriesWall } from './components/PatronStoriesWall';
+import { LeatherConciergeWidget } from './components/LeatherConciergeWidget';
 import { Footer } from './components/Footer';
 import { Check, ShoppingBag } from 'lucide-react';
 
@@ -37,6 +39,7 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isPaymentSettingsOpen, setIsPaymentSettingsOpen] = useState(false);
   const [isSetupGuideOpen, setIsSetupGuideOpen] = useState(false);
+  const [isConciergeOpen, setIsConciergeOpen] = useState(false);
 
   // Patron Wishlist & Shared Registry state
   const [wishlist, setWishlist] = useState<WishlistItem[]>(() => wishlistService.getWishlist());
@@ -207,6 +210,13 @@ export default function App() {
     }
   };
 
+  const scrollToStories = () => {
+    const el = document.getElementById('patron-stories');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const cartTotalCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
 
   return (
@@ -249,6 +259,10 @@ export default function App() {
         onScrollToStory={() => {
           setIsCorporateView(false);
           setTimeout(scrollToStory, 100);
+        }}
+        onScrollToStories={() => {
+          setIsCorporateView(false);
+          setTimeout(scrollToStories, 100);
         }}
         isCorporateView={isCorporateView}
       />
@@ -293,6 +307,12 @@ export default function App() {
 
             {/* Artisanal Heritage & Craftsmanship Story */}
             <BrandStory />
+
+            {/* Customer Reviews & Patron Stories Wall */}
+            <PatronStoriesWall
+              products={products}
+              onSelectProduct={(p) => setSelectedProduct(p)}
+            />
           </>
         )}
       </main>
@@ -321,6 +341,12 @@ export default function App() {
         onBuyNow={handleBuyNow}
         onToggleWishlist={handleToggleWishlist}
         isInWishlist={selectedProduct ? wishlistProductIds.includes(selectedProduct.id) : false}
+        onViewPatronWall={() => {
+          setSelectedProduct(null);
+          setIsCorporateView(false);
+          setTimeout(scrollToStories, 100);
+        }}
+        onOpenConcierge={() => setIsConciergeOpen(true)}
       />
 
       {/* Cart Drawer */}
@@ -399,6 +425,13 @@ export default function App() {
         onClose={() => setIsSetupGuideOpen(false)}
         onOpenAdmin={() => setIsAdminOpen(true)}
         onOpenPaymentSettings={() => setIsPaymentSettingsOpen(true)}
+      />
+
+      {/* Floating Customer Leather Care & Sizing Concierge */}
+      <LeatherConciergeWidget
+        currentProduct={selectedProduct}
+        isOpenExternal={isConciergeOpen}
+        onCloseExternal={() => setIsConciergeOpen(false)}
       />
 
     </div>
