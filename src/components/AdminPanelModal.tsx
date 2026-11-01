@@ -28,7 +28,14 @@ import {
   ShieldCheck,
   RefreshCw,
   AlertCircle,
-  FileText
+  FileText,
+  Database,
+  HardDrive,
+  Mail,
+  Inbox,
+  Send,
+  ImageIcon,
+  Server
 } from 'lucide-react';
 
 interface AdminPanelModalProps {
@@ -48,10 +55,81 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'coupons' | 'json' | 'guide'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'coupons' | 'json' | 'server' | 'guide'>('products');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Hostinger Server, MySQL & Media Storage State
+  const [serverStatus, setServerStatus] = useState<any>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<any[]>([]);
+
+  // IMAP Inbox & Test State
+  const [imapMessages, setImapMessages] = useState<any[]>([]);
+  const [isLoadingImap, setIsLoadingImap] = useState(false);
+  const [isTestingImap, setIsTestingImap] = useState(false);
+  const [imapTestResult, setImapTestResult] = useState<any>(null);
+  const [selectedMail, setSelectedMail] = useState<any>(null);
+
+  // Fetch server status, media files, and IMAP inbox when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch('/api/health')
+        .then((r) => r.json())
+        .then((data) => setServerStatus(data))
+        .catch(() => {});
+      fetch('/api/uploads')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.files) setMediaFiles(data.files);
+        })
+        .catch(() => {});
+      fetch('/api/mail/inbox')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.messages) setImapMessages(data.messages);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  const handleRefreshImap = async () => {
+    setIsLoadingImap(true);
+    try {
+      const res = await fetch('/api/mail/inbox');
+      const data = await res.json();
+      if (data && data.messages) {
+        setImapMessages(data.messages);
+        setStatusMessage({ text: `✓ IMAP inbox refreshed (${data.messages.length} messages)`, type: 'success' });
+        setTimeout(() => setStatusMessage(null), 3000);
+      }
+    } catch (e) {
+      setStatusMessage({ text: 'Failed to refresh IMAP inbox', type: 'error' });
+      setTimeout(() => setStatusMessage(null), 3000);
+    } finally {
+      setIsLoadingImap(false);
+    }
+  };
+
+  const handleTestImapConnection = async () => {
+    setIsTestingImap(true);
+    setImapTestResult(null);
+    try {
+      const res = await fetch('/api/mail/test-imap', { method: 'POST' });
+      const data = await res.json();
+      setImapTestResult(data);
+    } catch (e: any) {
+      setImapTestResult({
+        success: false,
+        connected: false,
+        error: e.message || 'Connection test failed',
+        details: 'Check server connection and port 993 reachability.'
+      });
+    } finally {
+      setIsTestingImap(false);
+    }
+  };
 
   // Coupons state
   const [coupons, setCoupons] = useState<Coupon[]>(() => couponService.getCoupons());
@@ -364,6 +442,53 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setFormImageUrl(data.url);
+        setStatusMessage({ text: `Image saved to Host disk: ${data.filename}`, type: 'success' });
+        setTimeout(() => setStatusMessage(null), 3500);
+        // Refresh uploads
+        fetch('/api/uploads').then((r) => r.json()).then((d) => {
+          if (d.files) setMediaFiles(d.files);
+        });
+      } else {
+        setStatusMessage({ text: data.error || 'Upload failed', type: 'error' });
+      }
+    } catch (err: any) {
+      setStatusMessage({ text: err.message || 'Error connecting to upload endpoint', type: 'error' });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleDeleteMedia = async (filename: string) => {
+    if (window.confirm(`Delete "${filename}" from host disk?`)) {
+      try {
+        const res = await fetch(`/api/uploads/${filename}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          setMediaFiles((prev) => prev.filter((f) => f.filename !== filename));
+          setStatusMessage({ text: `Deleted ${filename} from host disk`, type: 'success' });
+          setTimeout(() => setStatusMessage(null), 2500);
+        }
+      } catch (err: any) {
+        setStatusMessage({ text: err.message || 'Error deleting file', type: 'error' });
+      }
+    }
+  };
+
   const handleCopyJSON = () => {
     navigator.clipboard.writeText(jsonText);
     setCopied(true);
@@ -470,6 +595,27 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             }`}
           >
             JSON Source Code
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('server')}
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'server'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
+            }`}
+          >
+            <Server className="w-3.5 h-3.5" />
+            <span>Host & MySQL Engine</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                serverStatus?.database?.connected
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {serverStatus?.database?.connected ? 'MySQL Active' : 'Disk Storage'}
+            </span>
           </button>
           <button
             type="button"
@@ -598,16 +744,33 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block font-semibold text-[#24140D] mb-1">Image URL</label>
-                      <input
-                        type="url"
-                        value={formImageUrl}
-                        onChange={(e) => setFormImageUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full px-3 py-2 bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
-                      />
-                      <p className="text-[10px] text-[#24140D]/60 mt-1">
-                        Accepts any high-res URL. If left empty, our signature leather fallback art is displayed automatically.
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-[#24140D]">Product Image (URL or Host Disk Upload)</label>
+                        <span className="text-[10px] text-[#783A1D] font-mono">Local Disk: ./uploads</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          value={formImageUrl}
+                          onChange={(e) => setFormImageUrl(e.target.value)}
+                          placeholder="https://... or /uploads/my-photo.jpg"
+                          className="flex-1 px-3 py-2 bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                        />
+                        <label className="px-3.5 py-2 bg-[#783A1D] hover:bg-[#5C2C16] text-[#FAF7F2] rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-sm">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{isUploadingImage ? 'Saving to Disk...' : 'Upload to Host Disk'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingImage}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-[#24140D]/60 mt-1 flex items-center gap-1.5">
+                        <HardDrive className="w-3 h-3 text-[#783A1D]" />
+                        <span>Images uploaded here are stored directly on your host's local disk. You can also paste external image URLs.</span>
                       </p>
                     </div>
 
@@ -1333,6 +1496,386 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
           )}
 
+          {/* TAB 5: HOST & MYSQL ENGINE STATUS & MEDIA STORAGE */}
+          {activeTab === 'server' && (
+            <div className="space-y-6 max-w-4xl text-xs text-[#24140D]/80 leading-relaxed">
+              <div className="space-y-1">
+                <h3 className="font-serif text-2xl font-bold text-[#24140D] flex items-center gap-2">
+                  <Server className="w-6 h-6 text-[#783A1D]" />
+                  <span>Host Environment & MySQL Database Control</span>
+                </h3>
+                <p className="text-[#24140D]/70">
+                  Real-time status of your Hostinger shared hosting environment, MySQL database connection, local disk media storage, and SMTP mailer.
+                </p>
+              </div>
+
+              {/* Status Grid: 4 Pillars */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 1. Database Engine */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[11px] uppercase tracking-wider text-[#783A1D] flex items-center gap-1.5">
+                      <Database className="w-3.5 h-3.5" />
+                      <span>Database Engine</span>
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      serverStatus?.database?.connected
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    }`}>
+                      {serverStatus?.database?.connected ? 'MySQL Active' : 'Disk Fallback'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Engine:</span>
+                      <strong className="font-mono text-[11px]">MySQL 8.0+</strong>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Host / Port:</span>
+                      <span className="font-mono text-[11px]">localhost:3306</span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Database:</span>
+                      <strong className="font-mono text-[11px]">Name</strong>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-[#24140D]/60 text-[11px]">Username:</span>
+                      <span className="font-mono text-[11px] truncate max-w-[100px]" title="our_username_here">our_username_here</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. File & Media Storage */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[11px] uppercase tracking-wider text-[#783A1D] flex items-center gap-1.5">
+                      <HardDrive className="w-3.5 h-3.5" />
+                      <span>Local Storage</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                      Host Disk
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Path:</span>
+                      <span className="font-mono text-[11px]">./uploads</span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Stored Files:</span>
+                      <strong className="text-[11px]">{mediaFiles.length} files</strong>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Route:</span>
+                      <span className="font-mono text-[11px]">/uploads/*</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-[#24140D]/60 text-[11px]">Upload Cap:</span>
+                      <span className="text-[11px]">15 MB / file</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Incoming Mail: IMAP */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2 shadow-xs ring-1 ring-[#783A1D]/20">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[11px] uppercase tracking-wider text-[#783A1D] flex items-center gap-1.5">
+                      <Inbox className="w-3.5 h-3.5 text-[#783A1D]" />
+                      <span>Incoming: IMAP</span>
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      serverStatus?.imap?.configured ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'
+                    }`}>
+                      {serverStatus?.imap?.configured ? 'Live IMAP' : 'Hostinger SSL'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Server:</span>
+                      <span className="font-mono text-[11px] font-semibold text-[#24140D]">imap.hostinger.com:993</span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Protocol:</span>
+                      <strong className="font-mono text-[11px] text-[#783A1D]">IMAP (SSL/TLS)</strong>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">User:</span>
+                      <span className="font-mono text-[10px] truncate max-w-[110px]" title="support@bharatvarshcrafts.com">
+                        support@bharatvarshcrafts.com
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-[#24140D]/60 text-[11px]">Function:</span>
+                      <span className="text-[11px] text-emerald-800 font-medium">Customer Inquiries</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Outgoing Mail: SMTP */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[11px] uppercase tracking-wider text-[#783A1D] flex items-center gap-1.5">
+                      <Send className="w-3.5 h-3.5 text-[#783A1D]" />
+                      <span>Outgoing: SMTP</span>
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      serverStatus?.smtp?.configured ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'
+                    }`}>
+                      {serverStatus?.smtp?.configured ? 'Live SMTP' : 'Hostinger SSL'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Server:</span>
+                      <span className="font-mono text-[11px] font-semibold text-[#24140D]">smtp.hostinger.com:465</span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">Protocol:</span>
+                      <strong className="font-mono text-[11px] text-[#783A1D]">SMTP (SSL/TLS)</strong>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
+                      <span className="text-[#24140D]/60 text-[11px]">User:</span>
+                      <span className="font-mono text-[10px] truncate max-w-[110px]" title="support@bharatvarshcrafts.com">
+                        support@bharatvarshcrafts.com
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-[#24140D]/60 text-[11px]">Function:</span>
+                      <span className="text-[11px] text-blue-800 font-medium">GST Invoices & Alerts</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* IMAP INCOMING SUPPORT INBOX VIEWER */}
+              <div className="p-4 rounded-xl bg-white border border-[#24140D]/15 shadow-xs space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#24140D]/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#783A1D]/10 border border-[#783A1D]/20 flex items-center justify-center text-[#783A1D] shrink-0">
+                      <Inbox className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-serif text-sm font-bold text-[#24140D]">
+                          Incoming Support Mailbox (IMAP — support@bharatvarshcrafts.com)
+                        </h4>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FAF7F2] text-[#783A1D] border border-[#783A1D]/30">
+                          imap.hostinger.com:993
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#24140D]/60">
+                        Patron inquiries, corporate gifting briefs, and size consultations synced via Hostinger IMAP.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={handleTestImapConnection}
+                      disabled={isTestingImap}
+                      className="px-3 py-1.5 rounded-lg border border-[#783A1D]/30 bg-[#FAF7F2] hover:bg-[#FAF7F2]/80 text-[#783A1D] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isTestingImap ? 'animate-spin' : ''}`} />
+                      <span>{isTestingImap ? 'Testing IMAP...' : 'Test IMAP (993)'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleRefreshImap}
+                      disabled={isLoadingImap}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#24140D] hover:bg-[#3D2013] text-[#FAF7F2] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingImap ? 'animate-spin' : ''}`} />
+                      <span>{isLoadingImap ? 'Syncing...' : 'Sync Inbox'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* IMAP Test Result Banner */}
+                {imapTestResult && (
+                  <div className={`p-3 rounded-lg text-xs border flex items-start gap-2.5 ${
+                    imapTestResult.connected
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      : 'bg-amber-50 border-amber-300 text-amber-900'
+                  }`}>
+                    {imapTestResult.connected ? (
+                      <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-0.5 flex-1">
+                      <div className="font-bold">
+                        {imapTestResult.connected
+                          ? `✓ Connected to Hostinger IMAP (imap.hostinger.com:993 SSL)`
+                          : `IMAP Connectivity Notice: ${imapTestResult.error || 'Connection Failed'}`}
+                      </div>
+                      <div className="text-[11px] opacity-90 leading-relaxed">
+                        {imapTestResult.details}
+                        {imapTestResult.messageCount !== undefined && (
+                          <span className="font-mono ml-2 font-semibold">
+                            (Total Messages: {imapTestResult.messageCount}, Unread: {imapTestResult.unseenCount || 0})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImapTestResult(null)}
+                      className="text-xs opacity-60 hover:opacity-100 p-0.5 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* IMAP Messages List */}
+                {imapMessages.length === 0 ? (
+                  <div className="text-center py-8 text-[#24140D]/50 bg-[#FAF7F2] rounded-lg border border-dashed border-[#24140D]/15">
+                    No messages in IMAP INBOX. Click &quot;Sync Inbox&quot; or &quot;Test IMAP (993)&quot; above.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#24140D]/10 border border-[#24140D]/10 rounded-lg overflow-hidden bg-white max-h-80 overflow-y-auto">
+                    {imapMessages.map((msg) => (
+                      <div
+                        key={msg.uid}
+                        onClick={() => setSelectedMail(msg)}
+                        className={`p-3 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                          msg.unread ? 'bg-[#FAF7F2]/80 hover:bg-[#FAF7F2]' : 'hover:bg-neutral-50'
+                        }`}
+                      >
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {msg.unread && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#783A1D] text-[#FAF7F2] tracking-wider uppercase">
+                                New
+                              </span>
+                            )}
+                            <span className="font-semibold text-xs text-[#24140D] truncate">
+                              {msg.from}
+                            </span>
+                            <span className="text-[10px] text-[#24140D]/50 font-mono">
+                              &lt;{msg.fromAddress}&gt;
+                            </span>
+                          </div>
+                          <div className="text-xs font-medium text-[#24140D] truncate">
+                            {msg.subject}
+                          </div>
+                          <div className="text-[11px] text-[#24140D]/65 line-clamp-1">
+                            {msg.snippet}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                          <span className="text-[10px] text-[#24140D]/50 font-mono">
+                            {new Date(msg.date).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                          <span className="text-[11px] text-[#783A1D] font-semibold hover:underline">
+                            Inspect &rarr;
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Hostinger Application Runner Architecture Card */}
+              <div className="p-4 rounded-xl bg-linear-to-r from-[#24140D] to-[#3D2013] text-[#FAF7F2] border border-[#C29B38]/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#783A1D] flex items-center justify-center text-[#C29B38] shrink-0">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-sm font-bold text-[#FAF7F2]">
+                      Hostinger hPanel Built-In Application Runner Optimization
+                    </h4>
+                    <p className="text-[11px] text-[#D4B37A]">
+                      server.js is standalone and unbundled — esbuild is never invoked during production deployment.
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-[#EFE9DF] space-y-1 pl-9">
+                  <p>• <strong>Zero Bundling Required:</strong> Hostinger runs <code>npm install --production</code> which skips devDependencies. <code>server.js</code> uses standard native Node.js ES Modules directly.</p>
+                  <p>• <strong>Startup Command:</strong> Hostinger&apos;s Application Runner simply runs <code>node server.js</code>.</p>
+                  <p>• <strong>Resilient Database Mode:</strong> If MySQL credentials are being updated or MySQL is restarting, the server automatically serves and persists data via local disk storage without dropping requests.</p>
+                </div>
+              </div>
+
+              {/* Media Library (Host Disk Storage) */}
+              <div className="p-4 rounded-xl bg-white border border-[#24140D]/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-serif text-base font-bold text-[#24140D] flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-[#783A1D]" />
+                      <span>Host Local Disk Media Library (./uploads)</span>
+                    </h4>
+                    <p className="text-[11px] text-[#24140D]/60">
+                      Files currently stored on the host&apos;s local disk. Click &apos;Copy URL&apos; to use or delete unneeded files.
+                    </p>
+                  </div>
+                  <label className="px-3.5 py-1.5 bg-[#783A1D] hover:bg-[#5C2C16] text-[#FAF7F2] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Image to Disk</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingImage}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {mediaFiles.length === 0 ? (
+                  <div className="text-center py-8 text-[#24140D]/50 bg-[#FAF7F2] rounded-lg border border-dashed border-[#24140D]/15">
+                    No uploaded images on local disk yet. Upload product photos or custom crests above.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-1">
+                    {mediaFiles.map((f: any) => (
+                      <div key={f.filename} className="p-2 rounded-lg border border-[#24140D]/10 bg-[#FAF7F2] flex flex-col justify-between group">
+                        <div className="aspect-square w-full rounded bg-white overflow-hidden flex items-center justify-center border border-[#24140D]/5 mb-1.5">
+                          <img src={f.url} alt={f.filename} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="text-[10px] text-[#24140D]/70 truncate font-mono mb-1" title={f.filename}>
+                          {f.filename}
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-[#24140D]/10">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(f.url);
+                              setStatusMessage({ text: `Copied URL: ${f.url}`, type: 'success' });
+                              setTimeout(() => setStatusMessage(null), 2000);
+                            }}
+                            className="text-[10px] text-[#783A1D] font-bold hover:underline cursor-pointer"
+                          >
+                            Copy URL
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMedia(f.filename)}
+                            className="text-[#991B1B] hover:text-red-700 p-0.5 cursor-pointer"
+                            title="Delete file from host disk"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -1499,6 +2042,104 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* IMAP MESSAGE DETAIL INSPECTION DIALOG */}
+      {selectedMail && (
+        <div className="fixed inset-0 z-60 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div
+            className="relative w-full max-w-2xl bg-[#FAF7F2] rounded-2xl shadow-2xl overflow-hidden border border-[#783A1D]/40 max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 bg-[#24140D] text-[#FAF7F2] border-b border-[#783A1D]/30 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#783A1D] flex items-center justify-center text-[#FAF7F2] shrink-0">
+                  <Inbox className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold text-[#FAF7F2] line-clamp-1">
+                    {selectedMail.subject}
+                  </h3>
+                  <p className="text-[11px] text-[#D4B37A]">
+                    Received via Hostinger IMAP (imap.hostinger.com:993)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMail(null)}
+                className="p-1.5 rounded-lg text-[#FAF7F2]/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close message inspection"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Email Metadata & Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-[#24140D]">
+              <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2">
+                <div className="flex justify-between py-1 border-b border-[#24140D]/5">
+                  <span className="text-[#24140D]/60 font-semibold">From:</span>
+                  <span className="font-medium text-[#24140D]">
+                    {selectedMail.from} &lt;<span className="font-mono text-[#783A1D]">{selectedMail.fromAddress}</span>&gt;
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#24140D]/5">
+                  <span className="text-[#24140D]/60 font-semibold">To Mailbox:</span>
+                  <span className="font-mono text-[#24140D]">support@bharatvarshcrafts.com</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#24140D]/5">
+                  <span className="text-[#24140D]/60 font-semibold">Date &amp; Time:</span>
+                  <span className="font-mono text-[#24140D]">
+                    {new Date(selectedMail.date).toLocaleString('en-IN', {
+                      dateStyle: 'full',
+                      timeStyle: 'medium'
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-[#24140D]/60 font-semibold">IMAP UID:</span>
+                  <span className="font-mono text-[#24140D]">#{selectedMail.uid}</span>
+                </div>
+              </div>
+
+              {/* Message Body Content */}
+              <div className="p-4 rounded-xl bg-white border border-[#24140D]/10 space-y-2">
+                <div className="text-[10px] uppercase font-bold text-[#783A1D] tracking-wider">
+                  Inquiry Message Body:
+                </div>
+                <div className="text-xs leading-relaxed text-[#24140D] whitespace-pre-wrap font-sans">
+                  {selectedMail.snippet}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-[#24140D]/60 italic">
+                * Note: This email was fetched from your Hostinger IMAP mail server (Port 993, SSL/TLS). Replying will open your configured email client or you can respond directly via support@bharatvarshcrafts.com.
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 py-4 bg-[#EFE9DF] border-t border-[#24140D]/10 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedMail(null)}
+                className="px-4 py-2 rounded-lg border border-[#24140D]/20 hover:bg-[#FAF7F2] text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+
+              <a
+                href={`mailto:${selectedMail.fromAddress}?subject=Re: ${encodeURIComponent(selectedMail.subject)}&body=Dear ${encodeURIComponent(selectedMail.from)},%0D%0A%0D%0AThank you for contacting Bharatvarsh Leathercrafts LLP regarding your inquiry.`}
+                className="px-5 py-2 rounded-lg bg-[#783A1D] hover:bg-[#5C2C16] text-[#FAF7F2] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Reply to Patron</span>
+              </a>
+            </div>
           </div>
         </div>
       )}

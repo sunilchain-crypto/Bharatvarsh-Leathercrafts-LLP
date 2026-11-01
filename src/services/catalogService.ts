@@ -5,6 +5,41 @@ const STORAGE_KEY_PRODUCTS = 'blc_store_products_v1';
 const STORAGE_KEY_CATEGORIES = 'blc_store_categories_v1';
 
 export const catalogService = {
+  // Sync from server (MySQL / Disk storage)
+  async syncFromServer(): Promise<{ products: Product[]; categories: CategoryStructure[] }> {
+    try {
+      const [prodRes, catRes] = await Promise.allSettled([
+        fetch('/api/products').then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/categories').then((r) => (r.ok ? r.json() : null))
+      ]);
+
+      let products: Product[] = [];
+      let categories: CategoryStructure[] = [];
+
+      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value) && prodRes.value.length > 0) {
+        products = prodRes.value;
+        this.saveProducts(products);
+      } else {
+        products = this.getProducts();
+      }
+
+      if (catRes.status === 'fulfilled' && Array.isArray(catRes.value) && catRes.value.length > 0) {
+        categories = catRes.value;
+        this.saveCategories(categories);
+      } else {
+        categories = this.getCategories();
+      }
+
+      return { products, categories };
+    } catch (err) {
+      console.warn('[Catalog Service] Server sync skipped or offline, using local cache:', err);
+      return {
+        products: this.getProducts(),
+        categories: this.getCategories()
+      };
+    }
+  },
+
   getCategories(): CategoryStructure[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_CATEGORIES);
@@ -40,6 +75,12 @@ export const catalogService = {
   saveCategories(categories: CategoryStructure[]): void {
     try {
       localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
+      // Sync to server asynchronously
+      fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories })
+      }).catch((err) => console.warn('[Catalog Sync] Categories sync notice:', err.message));
     } catch (e) {
       console.error('Failed to save categories to storage', e);
     }
@@ -54,7 +95,14 @@ export const catalogService = {
     products.unshift(product);
     this.saveProducts(products);
 
-    // Ensure the category has this productType
+    // Sync to server / MySQL asynchronously
+    fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product)
+    }).catch((err) => console.warn('[Catalog Sync] Product add notice:', err.message));
+
+    // Ensure category has this productType
     this.ensureProductType(product.category as TopCategory, product.productType);
 
     return product;
@@ -66,6 +114,14 @@ export const catalogService = {
     if (index !== -1) {
       products[index] = updatedProduct;
       this.saveProducts(products);
+
+      // Sync to server / MySQL asynchronously
+      fetch(`/api/products/${updatedProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProduct)
+      }).catch((err) => console.warn('[Catalog Sync] Product update notice:', err.message));
+
       this.ensureProductType(updatedProduct.category as TopCategory, updatedProduct.productType);
     }
     return updatedProduct;
@@ -76,6 +132,12 @@ export const catalogService = {
     const filtered = products.filter((p) => p.id !== productId);
     if (filtered.length !== products.length) {
       this.saveProducts(filtered);
+
+      // Sync to server / MySQL asynchronously
+      fetch(`/api/products/${productId}`, {
+        method: 'DELETE'
+      }).catch((err) => console.warn('[Catalog Sync] Product delete notice:', err.message));
+
       return true;
     }
     return false;

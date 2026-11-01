@@ -55,6 +55,14 @@ export default function App() {
     }
   }, [products]);
 
+  // Sync catalog with server database on mount
+  useEffect(() => {
+    catalogService.syncFromServer().then(({ products: p, categories: c }) => {
+      if (p && p.length > 0) setProducts(p);
+      if (c && c.length > 0) setCategories(c);
+    });
+  }, []);
+
   // Cart state with persistence
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {

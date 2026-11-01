@@ -90,6 +90,14 @@ export const orderService = {
     };
     orders.unshift(orderWithStatus);
     this.saveOrders(orders);
+
+    // Save to MySQL backend & trigger SMTP notification
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderWithStatus)
+    }).catch((err) => console.warn('[Order Sync] Notice:', err.message));
+
     return orderWithStatus;
   },
 

@@ -108,6 +108,21 @@ export const CorporateGiftingView: React.FC<CorporateGiftingViewProps> = ({
     corporateService.saveQuote(liveQuote);
     setSubmittedQuote(liveQuote);
     setSubmittedSuccess(true);
+
+    // Save to MySQL inquiries and send notification via SMTP to support@bharatvarshcrafts.com
+    fetch('/api/inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'Corporate B2B Quote',
+        name: contactPerson,
+        email,
+        phone,
+        subject: `Corporate Quote Request: ${companyName} (${quantity}x ${selectedProduct.name})`,
+        message: `Quote #${liveQuote.quoteNumber} requested for ${quantity} units of ${selectedProduct.name} by ${contactPerson} (${companyName}, GSTIN: ${gstin}). Grand Total: ₹${liveQuote.grandTotal.toLocaleString('en-IN')}. Timeline: ${liveQuote.deliveryTimelineWeeks}.`,
+        details: liveQuote
+      })
+    }).catch((err) => console.warn('[Corporate Inquiry Notice]:', err.message));
   };
 
   const currentTier = corporateService.getDiscountTier(quantity);
