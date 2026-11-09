@@ -196,7 +196,7 @@ export const CorporateGiftingView: React.FC<CorporateGiftingViewProps> = ({
             <div className="p-6 rounded-2xl bg-white border border-[#24140D]/10 hover:border-[#783A1D]/40 transition-all shadow-xs space-y-4">
               <div className="aspect-[16/10] rounded-xl overflow-hidden bg-[#EFE9DF] border border-[#24140D]/10">
                 <ProductImage
-                  src={products.find((p) => p.id === 'blc-m-wallet-01')?.images[0]}
+                  src={products.find((p) => p.id === 'blc-m-wallet-01')?.images?.[0] || ''}
                   alt="The Boardroom Heritage Suite"
                 />
               </div>
@@ -223,7 +223,7 @@ export const CorporateGiftingView: React.FC<CorporateGiftingViewProps> = ({
             <div className="p-6 rounded-2xl bg-white border border-[#24140D]/10 hover:border-[#783A1D]/40 transition-all shadow-xs space-y-4">
               <div className="aspect-[16/10] rounded-xl overflow-hidden bg-[#EFE9DF] border border-[#24140D]/10">
                 <ProductImage
-                  src={products.find((p) => p.id === 'blc-m-belt-01')?.images[0]}
+                  src={products.find((p) => p.id === 'blc-m-belt-01')?.images?.[0] || ''}
                   alt="The Viceroy Leadership Ensemble"
                 />
               </div>
@@ -250,7 +250,7 @@ export const CorporateGiftingView: React.FC<CorporateGiftingViewProps> = ({
             <div className="p-6 rounded-2xl bg-white border border-[#24140D]/10 hover:border-[#783A1D]/40 transition-all shadow-xs space-y-4">
               <div className="aspect-[16/10] rounded-xl overflow-hidden bg-[#EFE9DF] border border-[#24140D]/10">
                 <ProductImage
-                  src={products.find((p) => p.id === 'blc-u-brief-01')?.images[0]}
+                  src={products.find((p) => p.id === 'blc-u-brief-01')?.images?.[0] || ''}
                   alt="The Sovereign Chairman Hamper"
                 />
               </div>
@@ -868,10 +868,10 @@ export const CorporateGiftingView: React.FC<CorporateGiftingViewProps> = ({
                       Artisanal Leather Manufacturers & Institutional Ateliers
                     </p>
                     <p className="text-[10px] text-[#24140D]/60 mt-0.5">
-                      LLPIN: AAY-8419 · GSTIN: 27AABCB8419L1Z8 · HSN Chapter 4202
+                      LLPIN: ADD-6497 · GSTIN: 27AABCB8419L1Z8 · HSN Chapter 4202
                     </p>
                     <p className="text-[10px] text-[#24140D]/60">
-                      Craft Quarter, Leather Complex, Maharashtra, India
+                      The Crown Greens, Hinjewadi Phase 2, Pune 411057
                     </p>
                   </div>
                 </div>

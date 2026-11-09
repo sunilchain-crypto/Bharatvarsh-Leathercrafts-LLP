@@ -35,8 +35,13 @@ import {
   Inbox,
   Send,
   ImageIcon,
-  Server
+  Server,
+  Lock,
+  ShieldAlert,
+  Zap,
+  Radio
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -53,12 +58,136 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   categories,
   onCatalogChanged
 }) => {
+  const { isOwner, role, user, getAuthHeaders } = useAuth();
+
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'coupons' | 'json' | 'server' | 'guide'>('products');
+  if (!isOwner) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="relative w-full max-w-lg bg-stone-900 border border-red-900/60 rounded-2xl shadow-2xl overflow-hidden p-8 text-center text-stone-200 animate-fadeIn">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 text-stone-400 hover:text-white rounded-lg hover:bg-stone-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-950/80 border border-red-700/60 flex items-center justify-center text-red-400 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          
+          <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider text-red-300 bg-red-950/80 border border-red-800/80 rounded-full mb-3">
+            HTTP 403 Forbidden
+          </span>
+
+          <h3 className="font-serif text-2xl font-bold text-amber-100 mb-2">
+            Store Management Restricted
+          </h3>
+          
+          <p className="text-sm text-stone-300 mb-6 leading-relaxed">
+            Role-Based Access Control is enforced. Store Management (Product Catalog, Categories, Inventory, Database, and Server Settings) is accessible only to the authenticated <strong>Store Owner</strong>.
+          </p>
+
+          <div className="bg-stone-950/60 border border-stone-800 rounded-xl p-4 mb-6 text-left text-xs space-y-2">
+            <div className="flex justify-between items-center text-stone-400">
+              <span>Current Account:</span>
+              <span className="font-mono text-stone-200">{user?.email || 'Guest / Not Authenticated'}</span>
+            </div>
+            <div className="flex justify-between items-center text-stone-400">
+              <span>Assigned Role:</span>
+              <span className="font-semibold text-amber-400">{role}</span>
+            </div>
+            <div className="flex justify-between items-center text-stone-400">
+              <span>Designated Owner:</span>
+              <span className="font-mono text-amber-200">sunilchain@gmail.com</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-amber-50 rounded-xl font-medium text-sm transition-colors shadow"
+            >
+              Return to Storefront
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'coupons' | 'concierge' | 'json' | 'server' | 'guide'>('products');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Concierge AI Knowledge Base State
+  const [conciergeKnowledge, setConciergeKnowledge] = useState<string>('');
+  const [knowledgeLastModified, setKnowledgeLastModified] = useState<string>('');
+  const [isSavingKnowledge, setIsSavingKnowledge] = useState(false);
+  const [testPrompt, setTestPrompt] = useState<string>('What size belt should I order for a 34 waist?');
+  const [testResponse, setTestResponse] = useState<string>('');
+  const [isTestingPrompt, setIsTestingPrompt] = useState(false);
+
+  const fetchConciergeKnowledge = async () => {
+    try {
+      const res = await fetch('/api/concierge-knowledge');
+      const data = await res.json();
+      if (data && data.content) {
+        setConciergeKnowledge(data.content);
+        setKnowledgeLastModified(data.lastModified || '');
+      }
+    } catch (e) {
+      console.warn('Failed loading concierge knowledge:', e);
+    }
+  };
+
+  const handleSaveKnowledge = async () => {
+    setIsSavingKnowledge(true);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/admin/concierge-knowledge', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
+        body: JSON.stringify({ content: conciergeKnowledge })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatusMessage({ text: '✓ Concierge AI knowledge base updated & applied instantly', type: 'success' });
+        setKnowledgeLastModified(data.lastModified || new Date().toISOString());
+      } else {
+        setStatusMessage({ text: `Failed: ${data.error || 'Could not save'}`, type: 'error' });
+      }
+    } catch (err: any) {
+      setStatusMessage({ text: `Error: ${err.message}`, type: 'error' });
+    } finally {
+      setIsSavingKnowledge(false);
+      setTimeout(() => setStatusMessage(null), 3500);
+    }
+  };
+
+  const handleTestConciergePrompt = async () => {
+    if (!testPrompt.trim() || isTestingPrompt) return;
+    setIsTestingPrompt(true);
+    setTestResponse('');
+    try {
+      const res = await fetch('/api/gemini/concierge-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: testPrompt })
+      });
+      const data = await res.json();
+      setTestResponse(data.reply || 'No response returned.');
+    } catch (e: any) {
+      setTestResponse(`Error: ${e.message}`);
+    } finally {
+      setIsTestingPrompt(false);
+    }
+  };
 
   // Hostinger Server, MySQL & Media Storage State
   const [serverStatus, setServerStatus] = useState<any>(null);
@@ -72,9 +201,69 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [imapTestResult, setImapTestResult] = useState<any>(null);
   const [selectedMail, setSelectedMail] = useState<any>(null);
 
-  // Fetch server status, media files, and IMAP inbox when modal opens
+  // CRM Webhook Dispatcher State
+  const [webhookStatus, setWebhookStatus] = useState<any>(null);
+  const [webhookDeliveries, setWebhookDeliveries] = useState<any[]>([]);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState<any>(null);
+
+  const fetchWebhookStatus = async () => {
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/admin/webhook/status', { headers: authHeaders });
+      const data = await res.json();
+      if (data.config) setWebhookStatus(data.config);
+      if (data.deliveries) setWebhookDeliveries(data.deliveries);
+    } catch (e) {
+      console.warn('Failed fetching webhook status:', e);
+    }
+  };
+
+  const handleTestWebhook = async () => {
+    setIsTestingWebhook(true);
+    setWebhookTestResult(null);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/admin/webhook/test', {
+        method: 'POST',
+        headers: authHeaders
+      });
+      const data = await res.json();
+      setWebhookTestResult(data);
+      if (data.success) {
+        setStatusMessage({ text: `✓ Webhook dispatched to CRM successfully (${data.durationMs}ms - HTTP ${data.statusCode})`, type: 'success' });
+      } else {
+        setStatusMessage({ text: `Webhook test completed: ${data.error || 'Server responded with code ' + data.statusCode} (${data.durationMs}ms)`, type: 'error' });
+      }
+      fetchWebhookStatus();
+    } catch (err: any) {
+      setStatusMessage({ text: `Webhook error: ${err.message}`, type: 'error' });
+    } finally {
+      setIsTestingWebhook(false);
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  const handleClearWebhookLog = async () => {
+    try {
+      const authHeaders = await getAuthHeaders();
+      await fetch('/api/admin/webhook/log', {
+        method: 'DELETE',
+        headers: authHeaders
+      });
+      setWebhookDeliveries([]);
+      setStatusMessage({ text: '✓ Webhook delivery log cleared', type: 'success' });
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (err: any) {
+      console.warn('Failed clearing webhook log', err);
+    }
+  };
+
+  // Fetch server status, media files, concierge knowledge, webhook status, and IMAP inbox when modal opens
   React.useEffect(() => {
     if (isOpen) {
+      fetchConciergeKnowledge();
+      fetchWebhookStatus();
       fetch('/api/health')
         .then((r) => r.json())
         .then((data) => setServerStatus(data))
@@ -128,6 +317,48 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       });
     } finally {
       setIsTestingImap(false);
+    }
+  };
+
+  // Database testing state
+  const [isTestingDb, setIsTestingDb] = useState(false);
+  const [dbTestResult, setDbTestResult] = useState<{
+    connected: boolean;
+    engine: string;
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    error?: string | null;
+    message: string;
+  } | null>(null);
+  const [showDbGuide, setShowDbGuide] = useState(false);
+
+  const handleTestDbConnection = async () => {
+    setIsTestingDb(true);
+    setDbTestResult(null);
+    try {
+      const res = await fetch('/api/db/test');
+      const data = await res.json();
+      setDbTestResult(data);
+      // Refresh server status
+      fetch('/api/health')
+        .then((r) => r.json())
+        .then((d) => setServerStatus(d))
+        .catch(() => {});
+    } catch (e: any) {
+      setDbTestResult({
+        connected: false,
+        engine: 'Local Disk Fallback',
+        host: '127.0.0.1',
+        port: 3306,
+        database: 'u687292208_BharatvarshDB',
+        user: 'u687292208_admin',
+        error: e.message || 'Connection test failed',
+        message: 'Failed to reach database test endpoint.'
+      });
+    } finally {
+      setIsTestingDb(false);
     }
   };
 
@@ -222,13 +453,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setFormLeatherType(prod.leatherType);
     setFormHardware(prod.hardware);
     setFormDimensions(prod.dimensions);
-    setFormImageUrl(prod.images[0] || '');
+    setFormImageUrl(prod.images?.[0] || '');
     setFormBadge(prod.badge || '');
     setFormInStock(prod.inStock);
     setFormFeatured(prod.isFeatured || false);
     setFormMonogram(prod.monogramAvailable);
-    setFormColors(prod.colors.map((c) => `${c.name} (${c.hex})`).join(', '));
-    setFormFeatures(prod.features.join('\n'));
+    setFormColors((prod.colors || []).map((c) => `${c.name} (${c.hex})`).join(', '));
+    setFormFeatures((prod.features || []).join('\n'));
     setAiVerified(false);
     setAiDraft(null);
     setShowAiVerificationModal(false);
@@ -580,6 +811,24 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               }`}
             >
               {coupons.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!conciergeKnowledge) fetchConciergeKnowledge();
+              setActiveTab('concierge');
+            }}
+            className={`py-3.5 border-b-2 -mb-px cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'concierge'
+                ? 'border-[#783A1D] text-[#783A1D] font-bold'
+                : 'border-transparent text-[#24140D]/60 hover:text-[#24140D] hover:border-[#24140D]/20'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#C29B38]" />
+            <span>AI Concierge Knowledge</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#783A1D]/10 text-[#783A1D] font-mono">
+              Active Grounding
             </span>
           </button>
           <button
@@ -1405,6 +1654,161 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
           )}
 
+          {/* TAB: CONCIERGE AI KNOWLEDGE BASE */}
+          {activeTab === 'concierge' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#24140D]/10">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-serif text-xl font-bold text-[#24140D]">
+                      Master Concierge AI Knowledge Base
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      Live Grounding Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#24140D]/70 mt-1 max-w-2xl">
+                    Train and update the knowledge base applied to the AI Concierge. The AI acts as an authoritative Master Leather Artisan grounded exclusively in this document and the product catalog (Size and fit, Regional monsoon care, Patina development, Leather types & tanning, Bespoke packaging & 22k monogramming, Hand saddle stitching vs machine lockstitching).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={fetchConciergeKnowledge}
+                    className="px-3 py-1.5 rounded-lg border border-[#24140D]/20 text-xs font-semibold flex items-center gap-1.5 hover:bg-[#FAF7F2] cursor-pointer"
+                    title="Reload from server"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Reload</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveKnowledge}
+                    disabled={isSavingKnowledge}
+                    className="px-5 py-2 rounded-lg bg-[#783A1D] hover:bg-[#8F4725] disabled:opacity-50 text-[#FAF7F2] text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm transition-all"
+                  >
+                    {isSavingKnowledge ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Save & Apply AI Training</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {knowledgeLastModified && (
+                <div className="text-[11px] text-[#24140D]/50 flex items-center justify-between">
+                  <span>Last synchronized with server: {new Date(knowledgeLastModified).toLocaleString('en-IN')}</span>
+                  <span className="font-mono">{conciergeKnowledge.length.toLocaleString('en-IN')} characters · {conciergeKnowledge.split(/\s+/).filter(Boolean).length.toLocaleString('en-IN')} words</span>
+                </div>
+              )}
+
+              {/* Monospace Markdown Editor */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-[#24140D]/70 font-medium">
+                  <span>Active Knowledge Document (Markdown / Text):</span>
+                  <span className="text-[11px] text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    Strict Scope Boundary: Concierge redirects questions outside this domain.
+                  </span>
+                </div>
+                <textarea
+                  rows={18}
+                  value={conciergeKnowledge}
+                  onChange={(e) => setConciergeKnowledge(e.target.value)}
+                  placeholder="Loading atelier knowledge base..."
+                  className="w-full font-mono text-[11px] leading-relaxed p-4 bg-[#1E120A] text-[#FAF7F2] rounded-xl border border-[#24140D]/20 focus:outline-none focus:ring-2 focus:ring-[#C29B38] shadow-inner"
+                  spellCheck={false}
+                />
+              </div>
+
+              {/* Interactive AI Test Bench */}
+              <div className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#24140D]/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#783A1D]" />
+                    <h4 className="font-serif text-sm font-bold text-[#24140D]">
+                      Interactive Concierge AI Test Bench
+                    </h4>
+                  </div>
+                  <span className="text-[10px] text-[#24140D]/60 uppercase tracking-wider font-semibold">
+                    Simulate Customer Inquiries
+                  </span>
+                </div>
+                <p className="text-xs text-[#24140D]/70">
+                  Test sample questions directly against the active AI model and knowledge document to verify that sizing, monsoon protocols, stitch explanations, and out-of-scope boundaries are operating correctly.
+                </p>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[
+                    'What size belt should I order for a 34 waist?',
+                    'How to protect my leather bag in Mumbai monsoon?',
+                    'What is the difference between saddle stitch and machine stitch?',
+                    'Explain full-grain veg-tan vs chrome tanned leather.',
+                    'Can you help me write Python code?'
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setTestPrompt(preset)}
+                      className="text-[10px] px-2.5 py-1 rounded-full bg-white border border-[#24140D]/15 text-[#783A1D] hover:bg-[#783A1D] hover:text-white transition-colors cursor-pointer"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <input
+                    type="text"
+                    value={testPrompt}
+                    onChange={(e) => setTestPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleTestConciergePrompt();
+                    }}
+                    placeholder="Enter customer question to test AI concierge response..."
+                    className="flex-1 px-3 py-2 text-xs bg-white border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTestConciergePrompt}
+                    disabled={isTestingPrompt || !testPrompt.trim()}
+                    className="px-4 py-2 bg-[#24140D] hover:bg-[#3D2013] disabled:opacity-50 text-[#FAF7F2] rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    {isTestingPrompt ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Querying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Test AI</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {testResponse && (
+                  <div className="mt-3 p-3.5 rounded-xl bg-white border border-[#24140D]/15 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#783A1D]">
+                      <Sparkles className="w-3 h-3 text-[#C29B38]" />
+                      <span>Concierge Response:</span>
+                    </div>
+                    <div className="text-xs text-[#24140D] whitespace-pre-wrap leading-relaxed">
+                      {testResponse}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TAB 3: JSON SOURCE CODE */}
           {activeTab === 'json' && (
             <div className="space-y-4">
@@ -1512,7 +1916,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               {/* Status Grid: 4 Pillars */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {/* 1. Database Engine */}
-                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2 shadow-xs">
+                <div className="p-3.5 rounded-xl bg-white border border-[#24140D]/10 space-y-2 shadow-xs ring-1 ring-[#783A1D]/15">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[11px] uppercase tracking-wider text-[#783A1D] flex items-center gap-1.5">
                       <Database className="w-3.5 h-3.5" />
@@ -1533,15 +1937,35 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
                     <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
                       <span className="text-[#24140D]/60 text-[11px]">Host / Port:</span>
-                      <span className="font-mono text-[11px]">localhost:3306</span>
+                      <span className="font-mono text-[11px]">{serverStatus?.database?.host || '127.0.0.1'}:3306</span>
                     </div>
                     <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
                       <span className="text-[#24140D]/60 text-[11px]">Database:</span>
-                      <strong className="font-mono text-[11px]">Name</strong>
+                      <strong className="font-mono text-[11px]">{serverStatus?.database?.database || 'u687292208_BharatvarshDB'}</strong>
                     </div>
-                    <div className="flex justify-between py-0.5">
+                    <div className="flex justify-between py-0.5 border-b border-[#24140D]/5">
                       <span className="text-[#24140D]/60 text-[11px]">Username:</span>
-                      <span className="font-mono text-[11px] truncate max-w-[100px]" title="our_username_here">our_username_here</span>
+                      <span className="font-mono text-[11px] truncate max-w-[95px]" title={serverStatus?.database?.user || 'u687292208_admin'}>
+                        {serverStatus?.database?.user || 'u687292208_admin'}
+                      </span>
+                    </div>
+                    <div className="pt-1 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={handleTestDbConnection}
+                        disabled={isTestingDb}
+                        className="text-[10px] text-[#783A1D] font-bold hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isTestingDb ? 'animate-spin' : ''}`} />
+                        <span>{isTestingDb ? 'Testing...' : 'Test Connection'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDbGuide(!showDbGuide)}
+                        className="text-[10px] text-[#24140D]/60 hover:text-[#24140D] font-medium cursor-pointer"
+                      >
+                        {showDbGuide ? 'Hide Guide' : 'How to Fix'}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1646,6 +2070,177 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* MYSQL DATABASE DIAGNOSTIC & HOSTINGER SETUP GUIDE */}
+              <div className="p-4 rounded-xl bg-white border border-[#24140D]/15 shadow-xs space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#24140D]/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#783A1D]/10 border border-[#783A1D]/20 flex items-center justify-center text-[#783A1D] shrink-0">
+                      <Database className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-serif text-sm font-bold text-[#24140D]">
+                          MySQL 8.0+ Database Engine &amp; Connectivity
+                        </h4>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                          serverStatus?.database?.connected
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-amber-50 text-amber-800 border-amber-300'
+                        }`}>
+                          {serverStatus?.database?.connected ? '✓ MySQL Active' : '● Host Disk Fallback Active'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#24140D]/60">
+                        Configured for Hostinger MySQL on <code className="font-mono bg-[#FAF7F2] px-1 rounded">localhost:3306</code> with resilient automatic disk fallback.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={handleTestDbConnection}
+                      disabled={isTestingDb}
+                      className="px-3.5 py-1.5 rounded-lg border border-[#783A1D]/30 bg-[#FAF7F2] hover:bg-[#FAF7F2]/80 text-[#783A1D] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isTestingDb ? 'animate-spin' : ''}`} />
+                      <span>{isTestingDb ? 'Testing Connection...' : 'Test MySQL (3306)'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowDbGuide(!showDbGuide)}
+                      className="px-3 py-1.5 rounded-lg bg-[#24140D] hover:bg-[#3D2013] text-[#FAF7F2] text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                    >
+                      {showDbGuide ? 'Close Setup Guide' : 'How to Fix / Connect Live'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* MySQL Test Result Banner */}
+                {dbTestResult && (
+                  <div className={`p-3 rounded-lg text-xs border flex items-start gap-2.5 ${
+                    dbTestResult.connected
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      : 'bg-amber-50 border-amber-300 text-amber-900'
+                  }`}>
+                    {dbTestResult.connected ? (
+                      <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-1 flex-1">
+                      <div className="font-bold flex items-center justify-between">
+                        <span>
+                          {dbTestResult.connected
+                            ? `✓ Successfully Connected to MySQL (${dbTestResult.host}:${dbTestResult.port} / ${dbTestResult.database})`
+                            : `Current Status: Disk Fallback Mode Active (Safe Storage)`}
+                        </span>
+                        <span className="font-mono text-[10px] opacity-75">Engine: {dbTestResult.engine}</span>
+                      </div>
+                      <div className="text-[11px] opacity-90 leading-relaxed">
+                        {dbTestResult.message}
+                      </div>
+                      {dbTestResult.error && (
+                        <div className="text-[10px] font-mono bg-black/5 p-1.5 rounded border border-black/10 text-amber-950">
+                          Diagnostic Code: {dbTestResult.error}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDbTestResult(null)}
+                      className="text-xs opacity-60 hover:opacity-100 p-0.5 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* Expandable or Default Hostinger Step-by-Step MySQL Guide */}
+                {(showDbGuide || !serverStatus?.database?.connected) && (
+                  <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#24140D]/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-serif text-xs font-bold text-[#24140D] uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#C29B38]" />
+                        <span>Why does it show &quot;Disk Fallback&quot; &amp; How to Connect MySQL</span>
+                      </h5>
+                      <span className="text-[10px] text-[#783A1D] font-medium bg-[#783A1D]/10 px-2 py-0.5 rounded">
+                        Hostinger hPanel Guide
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-[#24140D]/75 leading-relaxed">
+                      <strong>Nothing is broken!</strong> In this cloud preview container, an external MySQL server is not running on <code>localhost:3306</code>. To protect your storefront, the app automatically runs in <strong>High-Availability Local Disk Fallback</strong> (persisting products, orders, and inquiries safely in <code>data/catalog_storage.json</code>).
+                    </p>
+
+                    <div className="space-y-2 pt-1">
+                      <div className="font-semibold text-xs text-[#24140D]">
+                        To connect your live MySQL database on Hostinger in 3 simple steps:
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+                        <div className="p-3 bg-white rounded-lg border border-[#24140D]/10 space-y-1">
+                          <div className="font-bold text-[#783A1D] flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-[#783A1D] text-white text-[9px] flex items-center justify-center">1</span>
+                            <span>Create in hPanel</span>
+                          </div>
+                          <p className="text-[#24140D]/70">
+                            Go to <strong>Hostinger hPanel &rarr; Databases &rarr; MySQL Databases</strong>. Create a database name and user with a secure password.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-white rounded-lg border border-[#24140D]/10 space-y-1">
+                          <div className="font-bold text-[#783A1D] flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-[#783A1D] text-white text-[9px] flex items-center justify-center">2</span>
+                            <span>Update .env File</span>
+                          </div>
+                          <p className="text-[#24140D]/70">
+                            In your website files, edit <code>.env</code> and replace the placeholder credentials with your actual Hostinger MySQL details.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-white rounded-lg border border-[#24140D]/10 space-y-1">
+                          <div className="font-bold text-[#783A1D] flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-[#783A1D] text-white text-[9px] flex items-center justify-center">3</span>
+                            <span>Restart Runner</span>
+                          </div>
+                          <p className="text-[#24140D]/70">
+                            Click <strong>Restart</strong> in Hostinger Application Manager. The tables auto-create and this badge turns <strong>MySQL Active</strong>!
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-[#24140D] rounded-lg text-[#FAF7F2] space-y-2 mt-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-mono text-[#D4B37A]">.env configuration snippet:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const snippet = `DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_NAME=u687292208_BharatvarshDB\nDB_USER=u687292208_admin\nDB_PASSWORD=SDM@Pune1`;
+                              navigator.clipboard.writeText(snippet);
+                              setStatusMessage({ text: 'Copied MySQL .env template to clipboard!', type: 'success' });
+                              setTimeout(() => setStatusMessage(null), 2500);
+                            }}
+                            className="text-[10px] text-[#C29B38] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>Copy .env Template</span>
+                          </button>
+                        </div>
+                        <pre className="text-[10px] font-mono leading-relaxed text-[#EFE9DF] overflow-x-auto">
+{`DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=u687292208_BharatvarshDB
+DB_USER=u687292208_admin
+DB_PASSWORD=SDM@Pune1`}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* IMAP INCOMING SUPPORT INBOX VIEWER */}
@@ -1803,6 +2398,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </div>
                 <div className="text-xs text-[#EFE9DF] space-y-1 pl-9">
                   <p>• <strong>Zero Bundling Required:</strong> Hostinger runs <code>npm install --production</code> which skips devDependencies. <code>server.js</code> uses standard native Node.js ES Modules directly.</p>
+                  <p>• <strong>Hostinger Port Binding:</strong> Listens on <code>const port = process.env.PORT || 3000</code> bound to <code>0.0.0.0</code>.</p>
                   <p>• <strong>Startup Command:</strong> Hostinger&apos;s Application Runner simply runs <code>node server.js</code>.</p>
                   <p>• <strong>Resilient Database Mode:</strong> If MySQL credentials are being updated or MySQL is restarting, the server automatically serves and persists data via local disk storage without dropping requests.</p>
                 </div>
@@ -1872,6 +2468,201 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* 5. CRM Webhook Dispatcher & Hostinger Live Integration */}
+              <div className="p-5 rounded-2xl bg-white border border-[#24140D]/10 space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#24140D]/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#783A1D] flex items-center justify-center text-[#C29B38] shadow-xs">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-serif text-sm font-bold text-[#24140D]">
+                          Hostinger CRM Webhook Dispatcher
+                        </h4>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          webhookStatus?.configured
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        }`}>
+                          {webhookStatus?.configured ? 'Active & Dispatched' : 'URL Unset'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#24140D]/65">
+                        Dispatches signed, real-time events (<code className="font-mono bg-black/5 px-1 py-0.5 rounded">order.created</code>, <code className="font-mono bg-black/5 px-1 py-0.5 rounded">inquiry.created</code>, <code className="font-mono bg-black/5 px-1 py-0.5 rounded">order.updated</code>) to your Hostinger CRM system.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={fetchWebhookStatus}
+                      className="px-2.5 py-1.5 rounded-lg border border-[#24140D]/20 hover:bg-[#FAF7F2] text-xs font-medium flex items-center gap-1 cursor-pointer"
+                      title="Refresh status"
+                    >
+                      <RefreshCw className="w-3 h-3 text-[#24140D]/70" />
+                      <span>Refresh</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleTestWebhook}
+                      disabled={isTestingWebhook}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#783A1D] hover:bg-[#8F4725] disabled:opacity-50 text-[#FAF7F2] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                    >
+                      {isTestingWebhook ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Pinging CRM...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Send Test Webhook Ping</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Webhook Configuration Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#24140D]/10 space-y-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#783A1D]">
+                      Target Endpoint (CRM_WEBHOOK_URL)
+                    </div>
+                    <div className="font-mono text-[11px] text-[#24140D] truncate select-all" title={webhookStatus?.url}>
+                      {webhookStatus?.url || 'https://papayawhip-rail-174498.hostingersite.com/'}
+                    </div>
+                    <div className="text-[10px] text-[#24140D]/50">
+                      Payloads posted via HTTP POST with JSON body and HMAC-SHA256 signature
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#24140D]/10 space-y-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#783A1D]">
+                      HMAC Signature Secret (CRM_WEBHOOK_SECRET)
+                    </div>
+                    <div className="font-mono text-[11px] text-[#24140D] flex items-center justify-between">
+                      <span>{webhookStatus?.maskedSecret || 'blc_wh••••••••2026!'}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold uppercase">
+                        SHA256 Ready
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[#24140D]/50">
+                      Verified via <code className="font-mono">X-Webhook-Signature</code> &amp; <code className="font-mono">X-Webhook-Secret</code> headers
+                    </div>
+                  </div>
+                </div>
+
+                {/* Test Ping Result Banner */}
+                {webhookTestResult && (
+                  <div className={`p-3.5 rounded-xl text-xs border flex items-start gap-2.5 animate-fadeIn ${
+                    webhookTestResult.success
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                      : 'bg-amber-50 border-amber-300 text-amber-950'
+                  }`}>
+                    {webhookTestResult.success ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-1 flex-1">
+                      <div className="font-bold flex items-center justify-between">
+                        <span>
+                          {webhookTestResult.success
+                            ? `✓ Webhook Dispatch Confirmed (${webhookTestResult.durationMs}ms)`
+                            : `Webhook Dispatch Attempt Completed (${webhookTestResult.durationMs}ms)`}
+                        </span>
+                        <span className="font-mono text-[10px] bg-black/10 px-1.5 py-0.5 rounded">
+                          HTTP {webhookTestResult.statusCode || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] leading-relaxed">
+                        Target: <code className="font-mono">{webhookTestResult.targetUrl}</code> · Event: <code className="font-mono">{webhookTestResult.event}</code>
+                      </div>
+                      {webhookTestResult.error && (
+                        <div className="text-[10px] font-mono bg-red-100/60 p-1.5 rounded border border-red-200 text-red-900">
+                          Diagnostic: {webhookTestResult.error}
+                        </div>
+                      )}
+                      {webhookTestResult.responseSnippet && (
+                        <div className="text-[10px] font-mono bg-black/5 p-1.5 rounded border border-black/10 max-h-24 overflow-y-auto">
+                          Response Preview: {webhookTestResult.responseSnippet}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setWebhookTestResult(null)}
+                      className="text-xs opacity-60 hover:opacity-100 p-0.5 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* Delivery History Log */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#24140D]">
+                    <div className="flex items-center gap-1.5">
+                      <Radio className="w-3.5 h-3.5 text-[#783A1D]" />
+                      <span>Live Webhook Deliveries ({webhookDeliveries.length})</span>
+                    </div>
+                    {webhookDeliveries.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearWebhookLog}
+                        className="text-[10px] text-red-700 hover:underline cursor-pointer"
+                      >
+                        Clear History
+                      </button>
+                    )}
+                  </div>
+
+                  {webhookDeliveries.length === 0 ? (
+                    <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#24140D]/10 text-center text-xs text-[#24140D]/60">
+                      No webhooks dispatched yet. Click <strong>&quot;Send Test Webhook Ping&quot;</strong> above, or place an order to see live events.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto max-h-56 rounded-xl border border-[#24140D]/10">
+                      <table className="w-full text-left text-xs bg-white">
+                        <thead className="bg-[#FAF7F2] text-[#24140D]/70 font-semibold text-[10px] uppercase border-b border-[#24140D]/10">
+                          <tr>
+                            <th className="py-2 px-3">Event</th>
+                            <th className="py-2 px-3">Status</th>
+                            <th className="py-2 px-3">Latency</th>
+                            <th className="py-2 px-3">Event ID</th>
+                            <th className="py-2 px-3 text-right">Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#24140D]/5 text-[11px]">
+                          {webhookDeliveries.map((del, i) => (
+                            <tr key={del.eventId || i} className="hover:bg-[#FAF7F2]/60 font-mono">
+                              <td className="py-2 px-3 font-semibold text-[#783A1D]">{del.event}</td>
+                              <td className="py-2 px-3">
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                  del.success
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {del.statusCode ? `HTTP ${del.statusCode}` : (del.success ? 'OK' : 'Error')}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-[#24140D]/70">{del.durationMs}ms</td>
+                              <td className="py-2 px-3 text-[#24140D]/50 text-[10px]">{del.eventId}</td>
+                              <td className="py-2 px-3 text-right text-[#24140D]/60 text-[10px]">
+                                {new Date(del.timestamp).toLocaleTimeString('en-IN')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

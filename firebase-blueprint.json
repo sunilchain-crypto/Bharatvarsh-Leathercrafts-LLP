@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Authenticated user profile and bespoke client preferences",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 254
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User full name",
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Avatar URL",
+          "maxLength": 1024
+        },
+        "role": {
+          "type": "string",
+          "enum": ["Owner", "Customer", "owner", "customer"],
+          "description": "User role: Owner has store management access, Customer has standard shopping access"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of account creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last update"
+        }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "#/entities/User",
+      "description": "Authenticated user documents"
+    }
+  }
+}

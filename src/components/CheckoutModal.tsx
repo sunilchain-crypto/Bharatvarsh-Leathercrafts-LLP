@@ -3,6 +3,9 @@ import { CartItem, CustomerDetails, Order, Coupon, PincodeLogisticsInfo } from '
 import { paymentService, PaymentResult } from '../services/paymentService';
 import { couponService } from '../services/couponService';
 import { logisticsService } from '../services/logisticsService';
+import { orderService } from '../services/orderService';
+import { cartWebhookService } from '../services/cartWebhookService';
+import { useAuth } from '../context/AuthContext';
 import {
   X,
   ShieldCheck,
@@ -48,17 +51,35 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const config = paymentService.getConfig();
 
-  // Form states
-  const [customer, setCustomer] = useState<CustomerDetails>({
-    name: 'Sunil Chainani',
-    email: 'sunilchain@gmail.com',
-    phone: '9820123456',
-    address: '42, Heritage Enclave, MG Road',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400001',
-    gstin: ''
+  const { user } = useAuth();
+  const savedProfile = orderService.getProfile();
+
+  // Form states - fetch actual values of logged-in customer, or leave blank if unavailable
+  const [customer, setCustomer] = useState<CustomerDetails>(() => {
+    const isSavedMatch = user?.email && savedProfile.email && user.email.toLowerCase() === savedProfile.email.toLowerCase();
+    return {
+      name: user?.displayName || (isSavedMatch ? savedProfile.name : '') || '',
+      email: user?.email || (!user ? savedProfile.email || '' : ''),
+      phone: user?.phoneNumber || (isSavedMatch ? savedProfile.phone : '') || '',
+      address: (isSavedMatch ? savedProfile.address : '') || '',
+      city: (isSavedMatch ? savedProfile.city : '') || '',
+      state: (isSavedMatch ? savedProfile.state : '') || '',
+      pincode: (isSavedMatch ? savedProfile.pincode : '') || '',
+      gstin: (isSavedMatch ? savedProfile.gstin : '') || ''
+    };
   });
+
+  // Keep synced if user signs in while checkout modal is open
+  useEffect(() => {
+    if (user) {
+      setCustomer((prev) => ({
+        ...prev,
+        name: prev.name || user.displayName || '',
+        email: user.email || prev.email,
+        phone: prev.phone || user.phoneNumber || ''
+      }));
+    }
+  }, [user]);
 
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'stripe' | 'cod'>('razorpay');
   const [couponCode, setCouponCode] = useState('');
@@ -164,6 +185,58 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
+  // Handle customer abandoning checkout before placing order
+  const handleClose = () => {
+    if (!confirmedOrder && items.length > 0) {
+      const contactInfo = {
+        name: customer.name || user?.displayName || '',
+        email: customer.email || user?.email || '',
+        phone: customer.phone || user?.phoneNumber || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        pincode: customer.pincode || ''
+      };
+      if (contactInfo.email || contactInfo.phone || contactInfo.name) {
+        cartWebhookService.reportAbandonedCart({
+          items,
+          customer: contactInfo,
+          cartTotal: total,
+          checkoutStep: paymentError ? 'payment_failed_abandoned' : 'checkout_modal_closed'
+        });
+      }
+    }
+    onClose();
+  };
+
+  // Dispatch beacon if customer closes window or tab during checkout
+  useEffect(() => {
+    const handleUnload = () => {
+      if (!confirmedOrder && items.length > 0) {
+        const contactInfo = {
+          name: customer.name || user?.displayName || '',
+          email: customer.email || user?.email || '',
+          phone: customer.phone || user?.phoneNumber || '',
+          city: customer.city || '',
+          state: customer.state || '',
+          pincode: customer.pincode || ''
+        };
+        if (contactInfo.email || contactInfo.phone) {
+          cartWebhookService.reportAbandonedCart({
+            items,
+            customer: contactInfo,
+            cartTotal: total,
+            checkoutStep: 'tab_closed_during_checkout'
+          });
+        }
+      }
+    };
+
+    window.addEventListener('pagehide', handleUnload);
+    return () => {
+      window.removeEventListener('pagehide', handleUnload);
+    };
+  }, [confirmedOrder, items, customer, user, total]);
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
       <div
@@ -188,7 +261,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close checkout"
             className="p-1.5 rounded-lg text-[#24140D]/60 hover:text-[#24140D] hover:bg-[#EFE9DF] transition-colors cursor-pointer"
           >

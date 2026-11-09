@@ -23,9 +23,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Image Area with Quick Action Overlays */}
       <div className="relative overflow-hidden cursor-pointer" onClick={() => onSelect(product)}>
         <ProductImage
-          src={product.images[0]}
-          alt={product.name}
-          category={product.productType}
+          src={product.images?.[0] || ''}
+          alt={product.name || 'Handcrafted Leather Product'}
+          category={product.productType || 'Leather Goods'}
           aspectRatio="square"
         />
 
@@ -85,9 +85,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div>
           {/* Unboxed Metadata with · separator */}
           <div className="flex items-center gap-1.5 text-[11px] text-[#783A1D] uppercase tracking-wider font-medium mb-1">
-            <span>{product.category}</span>
+            <span>{product.category || 'Atelier'}</span>
             <span aria-hidden="true" className="text-[#24140D]/30">·</span>
-            <span className="text-[#24140D]/70">{product.productType}</span>
+            <span className="text-[#24140D]/70">{product.productType || 'Handcrafted'}</span>
           </div>
 
           {/* Product Title */}
@@ -95,11 +95,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onClick={() => onSelect(product)}
             className="font-serif text-lg font-bold text-[#24140D] group-hover:text-[#783A1D] transition-colors cursor-pointer line-clamp-1"
           >
-            {product.name}
+            {product.name || 'Untitled Piece'}
           </h3>
 
           <p className="text-xs text-[#24140D]/70 line-clamp-2 mt-1 leading-relaxed">
-            {product.shortDescription}
+            {product.shortDescription || ''}
           </p>
         </div>
 
@@ -107,26 +107,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="pt-3 border-t border-[#24140D]/10 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-base font-bold text-[#24140D] font-mono tabular-nums">
-              ₹{product.price.toLocaleString('en-IN')}
+              ₹{(product.price || 0).toLocaleString('en-IN')}
             </span>
-            {product.originalPrice && (
+            {product.originalPrice ? (
               <span className="text-xs text-[#24140D]/40 line-through font-mono tabular-nums">
                 ₹{product.originalPrice.toLocaleString('en-IN')}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Available Color Swatch Dots */}
-          <div className="flex items-center gap-1" title={`${product.colors.length} shades available`}>
-            {product.colors.map((c, idx) => (
-              <span
-                key={idx}
-                className="w-3 h-3 rounded-full border border-black/20 shadow-xs inline-block"
-                style={{ backgroundColor: c.hex }}
-                title={c.name}
-              />
-            ))}
-          </div>
+          {Array.isArray(product.colors) && product.colors.length > 0 && (
+            <div className="flex items-center gap-1" title={`${product.colors.length} shades available`}>
+              {product.colors.map((c, idx) => (
+                <span
+                  key={idx}
+                  className="w-3 h-3 rounded-full border border-black/20 shadow-xs inline-block"
+                  style={{ backgroundColor: c.hex }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

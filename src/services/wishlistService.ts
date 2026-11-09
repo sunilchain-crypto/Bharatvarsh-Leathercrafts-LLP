@@ -4,37 +4,29 @@ import { INITIAL_PRODUCTS } from '../data/initialCatalog';
 const STORAGE_KEY_WISHLIST = 'blc_patron_wishlist_v1';
 const STORAGE_KEY_REGISTRIES = 'blc_patron_registries_v1';
 
-const SEED_WISHLIST: WishlistItem[] = [
-  {
-    id: 'wish_seed_01',
-    product: INITIAL_PRODUCTS.find((p) => p.id === 'blc-u-brief-01') || INITIAL_PRODUCTS[0],
-    selectedColor: 'London Tan',
-    monogramText: 'SC',
-    addedAt: '2026-10-15T10:00:00.000Z',
-    isClaimed: false
-  },
-  {
-    id: 'wish_seed_02',
-    product: INITIAL_PRODUCTS.find((p) => p.id === 'blc-m-belt-01') || INITIAL_PRODUCTS[1],
-    selectedColor: 'Saddle Cognac',
-    monogramText: 'SC',
-    addedAt: '2026-10-18T14:30:00.000Z',
-    isClaimed: false
-  }
-];
+const SEED_WISHLIST: WishlistItem[] = [];
 
 export const wishlistService = {
   getWishlist(): WishlistItem[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_WISHLIST);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Filter out legacy default seed items
+          const cleaned = parsed.filter(
+            (it: WishlistItem) => it.id !== 'wish_seed_01' && it.id !== 'wish_seed_02'
+          );
+          if (cleaned.length !== parsed.length) {
+            this.saveWishlist(cleaned);
+          }
+          return cleaned;
+        }
       }
     } catch (e) {
       console.warn('Failed to load wishlist from storage', e);
     }
-    this.saveWishlist(SEED_WISHLIST);
-    return SEED_WISHLIST;
+    return [];
   },
 
   saveWishlist(items: WishlistItem[]): void {

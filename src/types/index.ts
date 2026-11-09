@@ -197,3 +197,18 @@ export interface PatronReview {
   helpfulCount: number;
 }
 
+// ==========================================
+// ROLE-BASED ACCESS CONTROL (RBAC)
+// ==========================================
+export type UserRole = 'Owner' | 'Customer';
+
+export interface AuthenticatedUser {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  role: UserRole;
+  isOwner: boolean;
+  isCustomer: boolean;
+  emailVerified?: boolean;
+}

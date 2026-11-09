@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { paymentService } from '../services/paymentService';
 import { PaymentGatewayConfig } from '../types';
-import { X, CreditCard, ShieldCheck, Check, Key, ExternalLink, Info } from 'lucide-react';
+import { X, CreditCard, ShieldCheck, Check, Key, ExternalLink, Info, Lock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface PaymentSettingsModalProps {
   isOpen: boolean;
@@ -12,7 +13,35 @@ export const PaymentSettingsModal: React.FC<PaymentSettingsModalProps> = ({
   isOpen,
   onClose
 }) => {
+  const { isOwner, role } = useAuth();
   if (!isOpen) return null;
+
+  if (!isOwner) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="relative w-full max-w-md bg-stone-900 border border-red-900/60 rounded-2xl p-6 text-center text-stone-200 shadow-2xl">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-red-950/80 border border-red-700/60 flex items-center justify-center text-red-400">
+            <Lock className="w-7 h-7" />
+          </div>
+          <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider text-red-300 bg-red-950/80 border border-red-800/80 rounded-full mb-2">
+            HTTP 403 Forbidden
+          </span>
+          <h3 className="font-serif text-xl font-bold text-amber-100 mb-2">
+            Store Settings Restricted
+          </h3>
+          <p className="text-xs text-stone-300 mb-5">
+            Payment gateway credentials and settlement keys are strictly restricted to the <strong>Store Owner</strong>. You are currently authenticated as {role}.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full py-2 bg-amber-700 hover:bg-amber-600 text-amber-50 rounded-xl text-xs font-semibold transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const [config, setConfig] = useState<PaymentGatewayConfig>(paymentService.getConfig());
   const [saveSuccess, setSaveSuccess] = useState(false);

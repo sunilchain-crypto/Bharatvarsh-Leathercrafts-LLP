@@ -1,0 +1,14 @@
+[
+  {
+    "success": true,
+    "eventId": "evt_1794193804487_zwp6so",
+    "event": "webhook.ping",
+    "targetUrl": "https://papayawhip-rail-174498.hostingersite.com/",
+    "statusCode": 200,
+    "statusText": "OK",
+    "durationMs": 651,
+    "timestamp": "2026-11-09T03:10:04.487Z",
+    "responseSnippet": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>Bharatvarsh Artisanal CRM · Payne &amp; Frow E-Commerce Architecture</title>\n    <meta name=\"description\" content=\"Single-organization luxury",
+    "requestPayloadPreview": "{\"id\":\"evt_1794193804487_zwp6so\",\"event\":\"webhook.ping\",\"timestamp\":\"2026-11-09T03:10:04.487Z\",\"source\":\"bharatvarsh-storefront\",\"store\":{\"brand\":\"Bharatvarsh Leathercrafts LLP\",\"domain\":\"http://localhost:3000\"},\"data\":{\"message\":\"Test ping from Bharatvarsh Leathercrafts Storefront Webhook Dispatche"
+  }
+]

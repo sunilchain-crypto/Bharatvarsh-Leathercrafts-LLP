@@ -110,7 +110,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 {/* Thumbnail */}
                 <div className="w-18 h-18 rounded-lg overflow-hidden shrink-0 border border-[#24140D]/10 bg-[#EFE9DF]">
                   <ProductImage
-                    src={item.product.images[0]}
+                    src={item.product.images?.[0] || ''}
                     alt={item.product.name}
                     aspectRatio="square"
                   />

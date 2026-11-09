@@ -1,6 +1,6 @@
 node_modules/
 build/
-dist/
+# dist/ (tracked so compiled frontend is included in Hostinger ZIP deployments)
 coverage/
 .DS_Store
 *.log

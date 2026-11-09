@@ -1,6 +1,7 @@
 import React from 'react';
 import { TopCategory } from '../types';
-import { SlidersHorizontal, CreditCard, BookOpen, Shield, Mail, Phone, MapPin, Building2 } from 'lucide-react';
+import { SlidersHorizontal, CreditCard, BookOpen, Shield, Mail, Phone, MapPin, Building2, Lock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface FooterProps {
   onSelectCategory: (category: TopCategory | 'All') => void;
@@ -19,6 +20,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenAccount,
   onOpenCorporate
 }) => {
+  const { isOwner } = useAuth();
   return (
     <footer className="bg-[#1C1009] text-[#EFE9DF] border-t border-[#C29B38]/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -49,15 +51,15 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="space-y-1.5 text-xs text-[#EFE9DF]/60 pt-2">
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-[#C29B38] shrink-0" />
-                <span>Atelier: Craft Quarter, Leather Complex, India</span>
+                <span>The Crown Greens, Hinjewadi Phase 2, Pune 411057</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-[#C29B38] shrink-0" />
-                <span>concierge@bharatvarshcrafts.com</span>
+                <span>support@bharatvarshcrafts.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-[#C29B38] shrink-0" />
-                <span>Artisan Helpline: +91 (0) 22 2847 9000</span>
+                <span>Artisan Helpline: +91 (0) 20 2986 0221</span>
               </div>
             </div>
           </div>
@@ -133,10 +135,10 @@ export const Footer: React.FC<FooterProps> = ({
             </ul>
           </div>
 
-          {/* Column 4: Store Operations & CMS */}
+          {/* Column 4: Store Operations (Owner) or Patron Services (Customer) */}
           <div className="space-y-3">
             <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-[#C29B38]">
-              Store Management
+              {isOwner ? 'Store Management' : 'Patron Services'}
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
@@ -157,33 +159,49 @@ export const Footer: React.FC<FooterProps> = ({
                   <span>My Orders & Consignment Tracking</span>
                 </button>
               </li>
-              <li>
-                <button
-                  onClick={onOpenAdmin}
-                  className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#C29B38]" />
-                  <span>Admin Catalog CMS</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={onOpenPaymentSettings}
-                  className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <CreditCard className="w-3.5 h-3.5 text-[#C29B38]" />
-                  <span>Payment Gateway Setup</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={onOpenSetupGuide}
-                  className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-[#C29B38]" />
-                  <span>Setup & Operations Guide</span>
-                </button>
-              </li>
+
+              {isOwner ? (
+                <>
+                  <li>
+                    <button
+                      onClick={onOpenAdmin}
+                      className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-[#C29B38]" />
+                      <span>Admin Catalog CMS</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={onOpenPaymentSettings}
+                      className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <CreditCard className="w-3.5 h-3.5 text-[#C29B38]" />
+                      <span>Payment Gateway Setup</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={onOpenSetupGuide}
+                      className="text-[#EFE9DF]/80 hover:text-[#FAF7F2] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-[#C29B38]" />
+                      <span>Setup & Operations Guide</span>
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="text-[#EFE9DF]/60 flex items-center gap-1.5">
+                    <span className="text-[#C29B38]">✓</span>
+                    <span>Bespoke Monogramming Included</span>
+                  </li>
+                  <li className="text-[#EFE9DF]/60 flex items-center gap-1.5">
+                    <span className="text-[#C29B38]">✓</span>
+                    <span>Lifetime Leather Stitching Warranty</span>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -192,7 +210,7 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Bottom Bar: Copyright, Legal & Compliance */}
         <div className="mt-12 pt-8 border-t border-[#FAF7F2]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#EFE9DF]/60">
           <div>
-            © {new Date().getFullYear()} Bharatvarsh Leathercrafts LLP. Registered Limited Liability Partnership (LLPIN: AAY-8419). All Rights Reserved.
+            © {new Date().getFullYear()} Bharatvarsh Leathercrafts LLP. Registered Limited Liability Partnership (LLPIN: ADD-6497). All Rights Reserved.
           </div>
           <div className="flex items-center gap-4">
             <span>Bespoke Handcrafted in India</span>

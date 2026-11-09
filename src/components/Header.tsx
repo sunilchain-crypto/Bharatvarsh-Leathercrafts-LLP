@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingBag, SlidersHorizontal, Menu, X, User, Package, Bookmark } from 'lucide-react';
+import { ShoppingBag, SlidersHorizontal, Menu, X, User, Package, Bookmark, ShieldCheck, LogIn } from 'lucide-react';
 import { TopCategory } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   activeCategory: TopCategory | 'All';
@@ -33,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   onScrollToStories,
   isCorporateView = false
 }) => {
+  const { user, isOwner, role } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -176,11 +178,54 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenAccount}
             aria-label="Customer profile and order history"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-[#24140D] hover:bg-[#EFE9DF] transition-colors whitespace-nowrap shrink-0 text-xs font-medium cursor-pointer"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-[#24140D] hover:bg-[#EFE9DF] transition-colors whitespace-nowrap shrink-0 text-xs font-medium cursor-pointer border border-[#24140D]/10"
+            title={user ? `Signed in as ${user.displayName || user.email} (${role})` : "Sign in to Bharatvarsh Patron Account"}
           >
-            <User className="w-4 h-4 text-[#783A1D]" />
-            <span>Account</span>
+            {user ? (
+              <>
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'Patron'}
+                    className="w-5 h-5 rounded-full object-cover border border-[#C29B38]"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-[#783A1D] text-[#FAF7F2] flex items-center justify-center text-[10px] font-bold">
+                    {(user.displayName || user.email || 'P')[0].toUpperCase()}
+                  </div>
+                )}
+                <span className="max-w-[110px] truncate">
+                  {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
+                </span>
+                <span
+                  className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded ${
+                    isOwner
+                      ? 'bg-amber-900/15 text-amber-900 border border-amber-900/30'
+                      : 'bg-stone-200 text-stone-700'
+                  }`}
+                >
+                  {role}
+                </span>
+              </>
+            ) : (
+              <>
+                <User className="w-3.5 h-3.5 text-[#783A1D]" />
+                <span>Sign In</span>
+              </>
+            )}
           </button>
+
+          {isOwner && (
+            <button
+              onClick={onOpenAdmin}
+              aria-label="Store Management (Owner Only)"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-900/10 text-amber-900 hover:bg-amber-900/20 border border-amber-900/20 transition-colors whitespace-nowrap shrink-0 text-xs font-semibold cursor-pointer"
+              title="Store Management & Catalog Control (Owner Only)"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-800" />
+              <span>Store Admin</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenCart}
@@ -208,6 +253,47 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-[#24140D]/10 bg-[#FAF7F2] px-6 py-5 space-y-4 shadow-xl">
+          {/* User Auth Status Bar */}
+          <div
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onOpenAccount();
+            }}
+            className="p-3 rounded-xl bg-white border border-[#24140D]/10 flex items-center justify-between cursor-pointer hover:bg-[#EFE9DF]/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              {user?.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || 'Patron'}
+                  className="w-8 h-8 rounded-full object-cover border border-[#C29B38]"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#24140D] text-[#FAF7F2] flex items-center justify-center text-xs font-bold border border-[#C29B38]/30">
+                  <User className="w-4 h-4 text-[#C29B38]" />
+                </div>
+              )}
+              <div>
+                <div className="font-semibold text-xs text-[#24140D]">
+                  {user ? (user.displayName || user.email) : 'Patron Account'}
+                </div>
+                <div className="text-[10px] text-[#783A1D] flex items-center gap-1">
+                  {user ? (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      <span>Firebase Verified</span>
+                    </>
+                  ) : (
+                    <span>Sign in with Google / Email &rarr;</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-[#783A1D] px-2 py-1 rounded bg-[#FAF7F2] border border-[#783A1D]/20">
+              {user ? 'View' : 'Login'}
+            </span>
+          </div>
+
           <div className="flex flex-col space-y-3 text-base">
             <button
               onClick={() => handleNavClick('All')}
@@ -296,16 +382,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Craftsmanship & Heritage
             </button>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAdmin();
-              }}
-              className="text-left font-medium py-1 text-[#783A1D] flex items-center gap-2 pt-2 border-t border-[#24140D]/10"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span>Store Admin & Catalog Manager</span>
-            </button>
+            {isOwner && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenAdmin();
+                }}
+                className="text-left font-medium py-1 text-[#783A1D] flex items-center gap-2 pt-2 border-t border-[#24140D]/10"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Store Management (Owner)</span>
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -55,7 +55,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   );
 
   // Sharing form state
-  const [patronName, setPatronName] = useState('Sunil Chainani');
+  const [patronName, setPatronName] = useState('');
   const [occasion, setOccasion] = useState('Milestone Birthday');
   const [personalNote, setPersonalNote] = useState(
     'A few handcrafted pieces from Bharatvarsh Leathercrafts that I would cherish for decades.'
@@ -64,8 +64,9 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   const [shareUrl, setShareUrl] = useState('');
 
   const handleGenerateLink = () => {
+    const finalName = patronName.trim() || 'A Patron';
     const url = wishlistService.generateShareableLink(
-      patronName,
+      finalName,
       occasion,
       personalNote,
       wishlist
@@ -74,18 +75,20 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   };
 
   const handleCopyLink = () => {
+    const finalName = patronName.trim() || 'A Patron';
     const urlToCopy =
       shareUrl ||
-      wishlistService.generateShareableLink(patronName, occasion, personalNote, wishlist);
+      wishlistService.generateShareableLink(finalName, occasion, personalNote, wishlist);
     navigator.clipboard.writeText(urlToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
   const handleShareWhatsApp = () => {
+    const finalName = patronName.trim() || 'A Patron';
     const urlToShare =
       shareUrl ||
-      wishlistService.generateShareableLink(patronName, occasion, personalNote, wishlist);
+      wishlistService.generateShareableLink(finalName, occasion, personalNote, wishlist);
     const text = encodeURIComponent(
       `Hello! Here is my curated Bharatvarsh Leathercrafts gift wishlist for my ${occasion}:\n${urlToShare}`
     );
@@ -231,7 +234,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                           }}
                         >
                           <ProductImage
-                            src={item.product.images[0]}
+                            src={item.product.images?.[0] || ''}
                             alt={item.product.name}
                             aspectRatio="square"
                           />
@@ -332,8 +335,12 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                   <input
                     type="text"
                     required
+                    placeholder="Enter your full name"
                     value={patronName}
-                    onChange={(e) => setPatronName(e.target.value)}
+                    onChange={(e) => {
+                      setPatronName(e.target.value);
+                      if (shareUrl) setShareUrl('');
+                    }}
                     className="w-full px-3 py-2 bg-[#FAF7F2] border border-[#24140D]/20 rounded-lg focus:outline-none focus:border-[#783A1D]"
                   />
                 </div>

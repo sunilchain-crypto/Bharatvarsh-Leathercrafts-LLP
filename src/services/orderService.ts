@@ -5,70 +5,41 @@ const STORAGE_KEY_ORDERS = 'blc_customer_orders_v1';
 const STORAGE_KEY_PROFILE = 'blc_customer_profile_v1';
 
 export const DEFAULT_CUSTOMER_PROFILE: CustomerProfile = {
-  name: 'Sunil Chainani',
-  email: 'sunilchain@gmail.com',
-  phone: '+91 98201 23456',
-  address: '42, Heritage Enclave, MG Road',
-  city: 'Mumbai',
-  state: 'Maharashtra',
-  pincode: '400001',
-  gstin: '27AAAAA0000A1Z5',
-  memberSince: 'October 2025',
+  name: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  gstin: '',
+  memberSince: '',
   tier: 'Patron of the Atelier'
 };
 
-const SEED_ORDERS: Order[] = [
-  {
-    id: 'ord_seed_101',
-    orderNumber: 'BLC-2026-7241',
-    customer: {
-      name: 'Sunil Chainani',
-      email: 'sunilchain@gmail.com',
-      phone: '9820123456',
-      address: '42, Heritage Enclave, MG Road',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400001',
-      gstin: '27AAAAA0000A1Z5'
-    },
-    items: [
-      {
-        id: 'item_seed_1',
-        product: INITIAL_PRODUCTS.find((p) => p.id === 'blc-m-wallet-01') || INITIAL_PRODUCTS[2],
-        selectedColor: 'Vintage Saddle',
-        monogramText: 'SC',
-        quantity: 1
-      }
-    ],
-    subtotal: 3250,
-    discount: 325,
-    shipping: 0,
-    tax: 526,
-    total: 2925,
-    paymentMethod: 'razorpay',
-    paymentStatus: 'paid',
-    paymentId: 'pay_rzp_live_84029412',
-    createdAt: '2026-10-08T14:22:00.000Z',
-    status: 'Delivered',
-    trackingNumber: 'BD-84729103IN',
-    courierName: 'BlueDart Air Express',
-    estimatedDelivery: 'Delivered on Oct 11, 2026'
-  }
-];
+const SEED_ORDERS: Order[] = [];
 
 export const orderService = {
   getOrders(): Order[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_ORDERS);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Filter out legacy default/seed orders
+          const cleaned = parsed.filter(
+            (o: Order) => o.id !== 'ord_seed_101' && o.orderNumber !== 'BLC-2026-7241'
+          );
+          if (cleaned.length !== parsed.length) {
+            this.saveOrders(cleaned);
+          }
+          return cleaned;
+        }
       }
     } catch (e) {
       console.warn('Failed to load orders', e);
     }
-    // Seed initial orders if empty
-    this.saveOrders(SEED_ORDERS);
-    return SEED_ORDERS;
+    return [];
   },
 
   saveOrders(orders: Order[]): void {

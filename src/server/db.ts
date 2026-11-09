@@ -6,17 +6,17 @@ import { fileURLToPath } from 'url';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from '../data/initialCatalog';
 import { CategoryStructure, Product, Order } from '../types';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Database configuration based on user credentials
-const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_PORT = Number(process.env.DB_PORT) || 3306;
-const DB_NAME = process.env.DB_NAME || 'Name';
-const DB_USER = process.env.DB_USER || 'our_username_here';
-const DB_PASSWORD = process.env.DB_PASSWORD || 'our_password_here';
+const DB_NAME = process.env.DB_NAME || 'u687292208_BharatvarshDB';
+const DB_USER = process.env.DB_USER || 'u687292208_admin';
+const DB_PASSWORD = process.env.DB_PASSWORD || 'SDM@Pune1';
 
 // Local storage fallback path for when MySQL is not active
 const FALLBACK_DIR = path.resolve(__dirname, '../../data');
@@ -259,6 +259,22 @@ async function createTablesIfNotExist() {
 
 // Database Operations
 export const dbService = {
+  async testConnection(): Promise<{ connected: boolean; engine: string; host: string; port: number; database: string; user: string; error?: string | null; message: string }> {
+    const success = await initDatabase();
+    return {
+      connected: success,
+      engine: success ? 'MySQL 8.0+' : 'Local Disk Fallback',
+      host: DB_HOST,
+      port: DB_PORT,
+      database: DB_NAME,
+      user: DB_USER,
+      error: lastError,
+      message: success
+        ? `Successfully connected to MySQL database '${DB_NAME}' on ${DB_HOST}:${DB_PORT}.`
+        : `Could not connect to MySQL at ${DB_HOST}:${DB_PORT} (${lastError || 'Connection refused'}). This is normal in the cloud preview container. On Hostinger, enter your live database credentials in .env to connect to MySQL.`
+    };
+  },
+
   async getStatus(): Promise<DBStatus> {
     const products = await this.getProducts();
     const categories = await this.getCategories();

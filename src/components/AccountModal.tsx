@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, OrderStatus, CustomerProfile, CartItem } from '../types';
 import { orderService } from '../services/orderService';
 import { ProductImage } from './ProductImage';
+import { useAuth } from '../context/AuthContext';
 import {
   X,
   Package,
@@ -17,8 +18,22 @@ import {
   Sparkles,
   ArrowRight,
   CreditCard,
-  Building
+  Building,
+  LogIn,
+  LogOut,
+  AlertCircle,
+  KeyRound,
+  Mail
 } from 'lucide-react';
+
+const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+  </svg>
+);
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -37,10 +52,74 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const {
+    user,
+    role,
+    isOwner,
+    loading: authLoading,
+    error: authError,
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    logout,
+    clearError
+  } = useAuth();
+
   const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
   const [profile, setProfile] = useState<CustomerProfile>(() => orderService.getProfile());
   const [profileSaved, setProfileSaved] = useState(false);
+
+  // Email/Password login state
+  const [isEmailAuthMode, setIsEmailAuthMode] = useState(false);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [localAuthError, setLocalAuthError] = useState<string | null>(null);
+
+  // Sync profile when Firebase user signs in
+  useEffect(() => {
+    if (user) {
+      setProfile((prev) => ({
+        ...prev,
+        name: user.displayName || prev.name || user.email?.split('@')[0] || 'Patron',
+        email: user.email || prev.email,
+      }));
+    }
+  }, [user]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLocalAuthError(null);
+      clearError();
+      await signInWithGoogle();
+    } catch (err: any) {
+      setLocalAuthError(err.message || 'Google sign in could not be completed.');
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail || !authPassword) return;
+    try {
+      setLocalAuthError(null);
+      clearError();
+      setAuthSubmitting(true);
+      if (isRegistering) {
+        await signUpWithEmail(authEmail, authPassword, authName);
+      } else {
+        await signInWithEmail(authEmail, authPassword);
+      }
+      setIsEmailAuthMode(false);
+      setAuthPassword('');
+    } catch (err: any) {
+      setLocalAuthError(err.message || 'Authentication failed.');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,27 +159,62 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-[#24140D]/10 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#24140D] text-[#FAF7F2] flex items-center justify-center border border-[#C29B38]/30">
-              <User className="w-4 h-4 text-[#C29B38]" />
-            </div>
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'Patron'}
+                className="w-9 h-9 rounded-full object-cover border border-[#C29B38]"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-[#24140D] text-[#FAF7F2] flex items-center justify-center border border-[#C29B38]/30 font-bold text-xs">
+                {user ? (user.displayName || user.email || 'P')[0].toUpperCase() : <User className="w-4 h-4 text-[#C29B38]" />}
+              </div>
+            )}
             <div>
-              <h2 className="font-serif text-lg font-bold text-[#24140D] leading-tight">
-                Customer Account & Order History
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-serif text-lg font-bold text-[#24140D] leading-tight">
+                  {user ? (user.displayName || 'Patron Account') : 'Patron Account & Order History'}
+                </h2>
+                {user && (
+                  <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
+                    Firebase Verified
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-[11px] text-[#783A1D] font-medium">
-                <span>{profile.name}</span>
+                <span>{user ? user.email : profile.name}</span>
                 <span aria-hidden="true" className="text-[#24140D]/30">·</span>
                 <span className="text-[#24140D]/70">{profile.tier}</span>
+                {user && (
+                  <>
+                    <span aria-hidden="true" className="text-[#24140D]/30">·</span>
+                    <span className="text-emerald-700 font-mono text-[10px]">Cloud Synced</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close account modal"
-            className="p-1.5 rounded-lg text-[#24140D]/60 hover:text-[#24140D] hover:bg-[#EFE9DF] transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {user && (
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="px-3 py-1.5 rounded-lg border border-[#24140D]/20 text-[#24140D]/80 hover:text-[#991B1B] hover:border-[#991B1B]/40 hover:bg-neutral-50 transition-colors text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                title="Sign out of Firebase"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              aria-label="Close account modal"
+              className="p-1.5 rounded-lg text-[#24140D]/60 hover:text-[#24140D] hover:bg-[#EFE9DF] transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tab Strip */}
@@ -131,6 +245,186 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+
+          {/* Firebase Authentication Patron Card */}
+          {user ? (
+            <div className="mb-6 p-4 rounded-xl bg-white border border-[#24140D]/10 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#24140D] flex items-center justify-center border border-[#C29B38]/50 text-[#C29B38] shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-xs text-[#24140D]">
+                      {user.displayName || user.email}
+                    </span>
+                    <span
+                      className={`text-[9px] uppercase px-2 py-0.5 rounded font-bold tracking-wider ${
+                        isOwner
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      }`}
+                    >
+                      Role: {role}
+                    </span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-stone-100 text-stone-700 font-medium">
+                      Firebase Verified
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#24140D]/70 mt-0.5">
+                    {isOwner
+                      ? 'Store Owner privileges active. Full access to Store Management, Product CMS, MySQL & settings.'
+                      : 'Patron Customer access active. Orders, cart, wishlist, and bespoke monogramming enabled.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                <span className="text-[10px] font-mono text-[#24140D]/50 hidden md:inline">
+                  UID: {user.uid.slice(0, 8)}...
+                </span>
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  className="px-3 py-1.5 rounded-lg border border-[#24140D]/20 hover:bg-[#FAF7F2] text-[#24140D] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-[#991B1B]" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 p-5 sm:p-6 rounded-2xl bg-linear-to-r from-[#24140D] to-[#3D2013] text-[#FAF7F2] border border-[#C29B38]/40 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#783A1D] flex items-center justify-center border border-[#C29B38]/60 text-[#C29B38] shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-serif text-base font-bold text-[#FAF7F2]">
+                        Sign In to Your Patron Portal
+                      </h3>
+                      <span className="text-[9px] uppercase bg-[#C29B38]/30 text-[#FAF7F2] px-2 py-0.5 rounded border border-[#C29B38]/40 font-mono font-semibold">
+                        Firebase Auth
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#EFE9DF]/80">
+                      Sign in to sync your bespoke orders, gift registries, and download official tax invoices.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={authLoading}
+                  className="px-4 py-2.5 bg-white hover:bg-neutral-50 text-[#24140D] text-xs font-bold rounded-xl flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-sm shrink-0 disabled:opacity-50"
+                >
+                  <GoogleIcon className="w-4 h-4" />
+                  <span>{authLoading ? 'Connecting...' : 'Sign In with Google'}</span>
+                </button>
+              </div>
+
+              {/* Error Alert */}
+              {(localAuthError || authError) && (
+                <div className="p-3 rounded-lg bg-red-950/80 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  <span className="flex-1">{localAuthError || authError}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalAuthError(null);
+                      clearError();
+                    }}
+                    className="text-xs text-red-300 hover:text-white p-0.5"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Email / Password Expandable Option */}
+              <div className="border-t border-white/10 pt-3">
+                {!isEmailAuthMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEmailAuthMode(true)}
+                    className="text-xs text-[#D4B37A] hover:text-[#FAF7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Or sign in / register with Email & Password</span>
+                  </button>
+                ) : (
+                  <form onSubmit={handleEmailAuth} className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[#D4B37A]">
+                        {isRegistering ? 'Create Patron Account' : 'Sign In with Email'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsRegistering(!isRegistering)}
+                        className="text-[#FAF7F2]/80 hover:text-white underline cursor-pointer"
+                      >
+                        {isRegistering ? 'Already have an account? Sign In' : 'New patron? Register'}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      {isRegistering && (
+                        <div className="sm:col-span-2">
+                          <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={authName}
+                            onChange={(e) => setAuthName(e.target.value)}
+                            className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-[#C29B38]"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <input
+                          type="email"
+                          required
+                          placeholder="Email Address"
+                          value={authEmail}
+                          onChange={(e) => setAuthEmail(e.target.value)}
+                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-[#C29B38]"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Password (min. 6 characters)"
+                          value={authPassword}
+                          onChange={(e) => setAuthPassword(e.target.value)}
+                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-[#C29B38]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsEmailAuthMode(false)}
+                        className="text-xs text-white/60 hover:text-white cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={authSubmitting}
+                        className="px-4 py-2 bg-[#C29B38] hover:bg-[#A8822B] text-[#24140D] font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {authSubmitting ? 'Authenticating...' : isRegistering ? 'Register Account' : 'Sign In'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* TAB 1: ORDER HISTORY */}
           {activeTab === 'orders' && (
@@ -277,7 +571,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#24140D]/10 shrink-0 bg-[#EFE9DF]">
                                     <ProductImage
-                                      src={it.product.images[0]}
+                                      src={it.product.images?.[0] || ''}
                                       alt={it.product.name}
                                       aspectRatio="square"
                                     />
@@ -482,7 +776,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     Leathercrafts LLP
                   </span>
                   <div className="text-[10px] text-[#24140D]/60 mt-1">
-                    LLPIN: AAY-8419 · GSTIN: 27AABCB8419L1Z8
+                    LLPIN: ADD-6497 · GSTIN: 27AABCB8419L1Z8
                   </div>
                 </div>
               </div>

@@ -134,19 +134,23 @@ export const LeatherConciergeWidget: React.FC<LeatherConciergeWidgetProps> = ({
     if (onCloseExternal) onCloseExternal();
   };
 
-  // Quick prompt questions
+  // Quick prompt questions grounded in knowledge document
   const quickPrompts = currentProduct?.productType.toLowerCase().includes('belt')
     ? [
-        { label: '📏 Indian Belt Sizing Guide', query: 'How do I pick the right belt size for my trouser waist in India?' },
-        { label: '💧 Monsoon & Humidity Care', query: 'How do I care for vegetable-tanned leather during Indian monsoons?' },
-        { label: '⏳ Patina Transformation', query: 'How will this bridle leather develop patina and darken over time?' },
-        { label: '✨ 22K Gold Debossing', query: 'What monogram placement and font style works best for this belt?' }
+        { label: '📏 Golden Rule Belt Sizing', query: 'How do I choose the right belt size for my trouser waist in India?' },
+        { label: '🌧️ Monsoon & Humidity Care', query: 'How do I care for vegetable-tanned leather during Pune and Mumbai monsoons?' },
+        { label: '🧵 Two-Needle Saddle Stitching', query: 'What stitch type is used on this belt and why will it never unravel?' },
+        { label: '🐂 Bridle vs Regular Leather', query: 'What is English Bridle leather and how is it curried with natural waxes?' },
+        { label: '🏺 Patina Transformation', query: 'How will this vegetable-tanned leather develop patina and deepen in color over time?' },
+        { label: '✨ 22K Gold Hot-Stamping', query: 'What are the bespoke monogramming and archival casket details for this belt?' }
       ]
     : [
-        { label: '📏 Size & Fit Consultation', query: 'How do I ensure perfect sizing and capacity for this leather item?' },
-        { label: '💧 Rain & Humidity Care', query: 'How should I condition vegetable-tanned leather in humid climates?' },
-        { label: '🏺 Patina Development', query: 'What does the vegetable-tanned leather patina journey look like?' },
-        { label: '🎁 Bespoke Gift Box & Monogram', query: 'What are the gifting options, crest debossing, and presentation casket details?' }
+        { label: '📏 Size & Fit Consultation', query: 'What are the dimensions and laptop or card capacity for this piece?' },
+        { label: '🌧️ Monsoon & Location Care', query: 'How should I condition vegetable-tanned leather in high humidity coastal regions?' },
+        { label: '🧵 Hand Saddle Stitch vs Machine', query: 'What is the difference between your hand saddle stitch and machine lockstitching?' },
+        { label: '🐂 Vegetable Tanning Process', query: 'How is your full-grain leather tanned and why do you reject chrome tanning?' },
+        { label: '🏺 Patina Maturation', query: 'What does the vegetable-tanned leather patina journey look like?' },
+        { label: '🎁 Bespoke Gift Box & Monogram', query: 'Tell me about the archival presentation casket and 22k gold debossing.' }
       ];
 
   // Belt sizing calculation logic

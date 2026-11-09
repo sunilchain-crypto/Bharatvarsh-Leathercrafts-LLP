@@ -81,7 +81,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="space-y-4">
               <div className="rounded-xl overflow-hidden border border-[#24140D]/10 shadow-sm bg-[#EFE9DF]">
                 <ProductImage
-                  src={product.images[selectedImageIndex] || product.images[0]}
+                  src={product.images?.[selectedImageIndex] || product.images?.[0] || ''}
                   alt={product.name}
                   category={product.productType}
                   aspectRatio="square"
@@ -89,7 +89,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Thumbnails */}
-              {product.images.length > 1 && (
+              {Array.isArray(product.images) && product.images.length > 1 && (
                 <div className="flex items-center gap-3 overflow-x-auto pb-1">
                   {product.images.map((img, idx) => (
                     <button

@@ -1,0 +1,590 @@
+{
+  "categories": [
+    {
+      "id": "men",
+      "name": "Men",
+      "description": "Bespoke hand-stitched leather belts and slim artisanal bifold & card wallets designed for distinguished everyday carry.",
+      "productTypes": [
+        "Leather Belts",
+        "Wallets"
+      ]
+    },
+    {
+      "id": "women",
+      "name": "Women",
+      "description": "Refined full-grain leather waist belts, structured wallets, and artisanal clutches and day purses with solid brass accents.",
+      "productTypes": [
+        "Belts",
+        "Wallets",
+        "Purses"
+      ]
+    },
+    {
+      "id": "unisex",
+      "name": "Unisex",
+      "description": "Heirloom travel backpacks and executive briefcases engineered for longevity, modern utility, and timeless patina.",
+      "productTypes": [
+        "Backpacks",
+        "Briefcases"
+      ]
+    }
+  ],
+  "products": [
+    {
+      "id": "blc-m-belt-01",
+      "name": "The Viceroy Full-Grain Bridle Belt",
+      "category": "Men",
+      "productType": "Leather Belts",
+      "price": 3850,
+      "originalPrice": 4500,
+      "shortDescription": "38mm English bridle cut with hand-burnished edges and solid antiqued brass buckle.",
+      "description": "Hand-cut from 9–10 oz vegetable-tanned full-grain cowhide, The Viceroy is built to endure decades of wear. Every edge is beveled, sealed with organic beeswax, and burnished by hand on wooden wheels. Paired with a solid cast brass roller buckle secured by dual Chicago screws for effortless buckle swapping.",
+      "images": [
+        "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Vegetable-Tanned English Bridle Cowhide (4.0mm thickness)",
+      "hardware": "Solid Cast Antique Brass with Heavy Roller",
+      "dimensions": "38mm (1.5\") width, Custom cut 30\" - 46\" waist sizes",
+      "colors": [
+        {
+          "name": "Saddle Cognac",
+          "hex": "#8B4513"
+        },
+        {
+          "name": "Espresso Black",
+          "hex": "#24140D"
+        },
+        {
+          "name": "Havana Chestnut",
+          "hex": "#5C2C16"
+        }
+      ],
+      "features": [
+        "Solid forged brass roller buckle",
+        "Hand-beveled and beeswax-burnished edges",
+        "Dual Chicago screw construction for hardware replacement",
+        "Saddle-stitched keeper loop with 0.6mm waxed linen thread",
+        "Ages naturally into a rich, lustrous patina"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Artisan Signature",
+      "isFeatured": true,
+      "careInstructions": "Condition annually with natural beeswax and neatsfoot leather balm. Keep away from prolonged direct water immersion."
+    },
+    {
+      "id": "blc-m-belt-02",
+      "name": "The Grandmaster Dress Belt",
+      "category": "Men",
+      "productType": "Leather Belts",
+      "price": 4200,
+      "originalPrice": 4800,
+      "shortDescription": "32mm tapered formal belt in smooth French calfskin with brushed brass hardware.",
+      "description": "A discreetly elegant dress belt tailored for tailored trousers and suits. Crafted from supple French calfskin layered over a resilient vegetable-tanned core, finished with perimeter saddle-stitching and a brushed champagne brass buckle.",
+      "images": [
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Aniline French Box Calfskin with Veg-Tan reinforcement",
+      "hardware": "Brushed Champagne Solid Brass Buckle",
+      "dimensions": "32mm (1.25\") width",
+      "colors": [
+        {
+          "name": "Deep Espresso",
+          "hex": "#1C120C"
+        },
+        {
+          "name": "Warm Cognac",
+          "hex": "#7A3E20"
+        }
+      ],
+      "features": [
+        "Beveled edge profile with feathered crease lines",
+        "Ultra-fine perimeter saddle stitching",
+        "Lined in soft vegetable-tanned natural calfskin",
+        "Hypoallergenic brass hardware"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Formal Classic",
+      "isFeatured": false,
+      "careInstructions": "Buff gently with a soft horsehair brush and apply neutral cream polish."
+    },
+    {
+      "id": "blc-m-wallet-01",
+      "name": "The Oudh Heritage Bifold Wallet",
+      "category": "Men",
+      "productType": "Wallets",
+      "price": 3250,
+      "originalPrice": 3800,
+      "shortDescription": "Classic 8-card bifold hand saddle-stitched with waxed French linen thread.",
+      "description": "The Oudh represents traditional leathercraft in its purest form. Hand-cut from Tuscan vegetable-tanned shoulder leather, each seam is punched with French-style pricking irons and saddle-stitched by hand with two needles. Holds 8 credit cards, double receipt slots, and a full-length cash compartment suited for Indian Rupee banknotes.",
+      "images": [
+        "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1606503829068-18e4e9db51d4?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Tuscan Vegetable-Tanned Vachetta",
+      "hardware": "Zero synthetic linings, 100% natural leather interior",
+      "dimensions": "11.5 cm x 9.2 cm x 1.4 cm",
+      "colors": [
+        {
+          "name": "Vintage Saddle",
+          "hex": "#934B24"
+        },
+        {
+          "name": "Midnight Charcoal",
+          "hex": "#222222"
+        },
+        {
+          "name": "Forest Olive",
+          "hex": "#3B4D3C"
+        }
+      ],
+      "features": [
+        "8 dedicated card pockets with turned thumb access",
+        "Dual hidden interior receipt flaps",
+        "Full-depth billfold for flat storage of all INR currency notes",
+        "Hand saddle-stitched (will never unravel even if a stitch is cut)",
+        "Complimentary custom hot-foil monogramming"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Best Seller",
+      "isFeatured": true,
+      "careInstructions": "The natural oils in your hands keep the leather conditioned. Re-hydrate with natural leather cream once every 6 months."
+    },
+    {
+      "id": "blc-m-wallet-02",
+      "name": "The Chhatrapati Minimalist Card Wallet",
+      "category": "Men",
+      "productType": "Wallets",
+      "price": 2150,
+      "shortDescription": "Slim front-pocket cardholder with central folded cash pocket.",
+      "description": "Designed for the discerning minimalist who carries essentials only. Accommodates 6 cards with a central lined pouch for folded bills, transit passes, or business cards. Slim enough to slide undetected into suit breast pockets or front jeans pockets.",
+      "images": [
+        "https://images.unsplash.com/photo-1606503829068-18e4e9db51d4?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Veg-Tan Buttero Leather (Italy)",
+      "hardware": "Hand-painted matching edge coat",
+      "dimensions": "10.2 cm x 7.4 cm x 0.6 cm",
+      "colors": [
+        {
+          "name": "Whiskey Tan",
+          "hex": "#A75D28"
+        },
+        {
+          "name": "Dark Chocolate",
+          "hex": "#2E180D"
+        }
+      ],
+      "features": [
+        "4 precision-beveled exterior card slots",
+        "1 central cash/receipt pocket",
+        "Ultra-thin 6mm empty profile",
+        "Hand-creased edge borders"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Essential",
+      "isFeatured": false,
+      "careInstructions": "Wipe with a clean dry microfiber cloth. Avoid overstuffing during the break-in week."
+    },
+    {
+      "id": "blc-w-belt-01",
+      "name": "The Rani Cinch Waist Belt",
+      "category": "Women",
+      "productType": "Belts",
+      "price": 3600,
+      "originalPrice": 4200,
+      "shortDescription": "Sculptural 28mm waist belt with hand-cast brass loop and tapered spear tip.",
+      "description": "An architectural statement piece tailored to cinch coats, wrap dresses, and tailored blazers. Handcrafted from supple vegetable-tanned grain leather with a delicate feathered edge, highlighted by our signature hand-cast interlocking brass ring inspired by royal heritage motifs.",
+      "images": [
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Smooth Full-Grain Vachetta Leather",
+      "hardware": "Hand-Cast Solid Brass Buckle & Keeper",
+      "dimensions": "28mm width, adjustable cinch sizing (26\" to 38\")",
+      "colors": [
+        {
+          "name": "Burgundy Oxblood",
+          "hex": "#5B1E28"
+        },
+        {
+          "name": "Cognac Saddle",
+          "hex": "#8C4623"
+        },
+        {
+          "name": "Midnight Onyx",
+          "hex": "#1F1E24"
+        }
+      ],
+      "features": [
+        "Versatile cinch closure fits both high waist and mid-rise wear",
+        "Hand-painted satin edge finishing",
+        "Subtle debossed Bharatvarsh workshop emblem on inner lining",
+        "Polished brass hardware with anti-tarnish protective coating"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Editor Choice",
+      "isFeatured": true,
+      "careInstructions": "Store hanging or loosely coiled. Buff with a soft cotton cloth."
+    },
+    {
+      "id": "blc-w-belt-02",
+      "name": "The Malabar Skinny Trouser Belt",
+      "category": "Women",
+      "productType": "Belts",
+      "price": 2950,
+      "shortDescription": "18mm delicate trouser belt with rounded horseshoe brass buckle.",
+      "description": "Graceful, understated, and timeless. Cut to a narrow 18mm silhouette with hand-skived edges that thread effortlessly through delicate trouser and denim belt loops.",
+      "images": [
+        "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Vegetable-Tanned Cowhide",
+      "hardware": "Brushed Golden Horseshoe Brass Buckle",
+      "dimensions": "18mm width",
+      "colors": [
+        {
+          "name": "Warm Camel",
+          "hex": "#C28955"
+        },
+        {
+          "name": "Deep Espresso",
+          "hex": "#26170E"
+        }
+      ],
+      "features": [
+        "Slim 18mm profile",
+        "Seven micro-spaced adjustment holes for precise fit",
+        "Tonal edge burnish with natural plant oils"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Classic",
+      "isFeatured": false,
+      "careInstructions": "Keep dry and store in the provided organic cotton dust bag."
+    },
+    {
+      "id": "blc-w-wallet-01",
+      "name": "The Nilgiri Continental Zip Wallet",
+      "category": "Women",
+      "productType": "Wallets",
+      "price": 4950,
+      "originalPrice": 5600,
+      "shortDescription": "Generous accordion clutch wallet with 12 card slots and zippered coin partition.",
+      "description": "Crafted for effortless organization. Unzips to reveal an expansive accordion interior lined in supple goatskin and veg-tan leather. Featuring 12 card slots, dual full-length currency sleeves, smartphone capacity, and a smooth Swiss-engineered brass zipper.",
+      "images": [
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Milled Pebble Leather",
+      "hardware": "Solid Brass Heavy-Duty Teeth Zipper (YKK Excella)",
+      "dimensions": "19.5 cm x 10.5 cm x 2.2 cm",
+      "colors": [
+        {
+          "name": "Caramel Tan",
+          "hex": "#A86134"
+        },
+        {
+          "name": "Emerald Forest",
+          "hex": "#224332"
+        },
+        {
+          "name": "Black Caviar",
+          "hex": "#1D1C1B"
+        }
+      ],
+      "features": [
+        "12 card slots with anti-stretch leather reinforcement",
+        "Interior zippered coin pocket with custom leather pull",
+        "Fits iPhone Pro Max or flagship smartphones easily",
+        "RFID-shielded internal lining"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Luxury Essential",
+      "isFeatured": true,
+      "careInstructions": "Condition every six months. Clean zipper teeth with a soft toothbrush if required."
+    },
+    {
+      "id": "blc-w-wallet-02",
+      "name": "The Avani Compact Flap Wallet",
+      "category": "Women",
+      "productType": "Wallets",
+      "price": 3450,
+      "shortDescription": "Tri-fold compact wallet with snap coin pouch and six card sleeves.",
+      "description": "The ideal companion for compact crossbody bags. Features a tactile brass snap closure, an origami-folded external coin pocket, and a dedicated cash bill compartment without excess bulk.",
+      "images": [
+        "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Vegetable-Tanned Italian Vachetta",
+      "hardware": "Prym Solid Brass Press-Stud Clasp",
+      "dimensions": "11.0 cm x 8.5 cm x 2.0 cm",
+      "colors": [
+        {
+          "name": "Vintage Ochre",
+          "hex": "#C68B39"
+        },
+        {
+          "name": "Havana Brown",
+          "hex": "#4B2616"
+        }
+      ],
+      "features": [
+        "Exterior gusseted coin pocket with snap cover",
+        "6 interior vertical card slots",
+        "Full-size currency sleeve",
+        "Finished with contrasting cream saddle stitch"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Artisan",
+      "isFeatured": false,
+      "careInstructions": "Protect from heavy rain; pat dry immediately with an absorbent towel."
+    },
+    {
+      "id": "blc-w-purse-01",
+      "name": "The Chandragiri Saddle Crossbody Purse",
+      "category": "Women",
+      "productType": "Purses",
+      "price": 8900,
+      "originalPrice": 9900,
+      "shortDescription": "Curved equestrian silhouette with turn-lock brass clasp and adjustable shoulder strap.",
+      "description": "Inspired by timeless equestrian saddlebags, The Chandragiri is structured yet soft to the touch. Featuring an articulated curved base, hand-burnished raw edges, solid brass hardware with our signature stitched ring charm, and an adjustable cross-body strap.",
+      "images": [
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Full-Grain Vegetable-Tanned Saddle Cowhide",
+      "hardware": "Solid Antiqued Cast Brass Turn-Lock & Ring Charm",
+      "dimensions": "23.0 cm x 18.0 cm x 7.5 cm",
+      "colors": [
+        {
+          "name": "Heritage Tan",
+          "hex": "#8D4925"
+        },
+        {
+          "name": "Deep Espresso",
+          "hex": "#2B1910"
+        },
+        {
+          "name": "Olive Drab",
+          "hex": "#4B5320"
+        }
+      ],
+      "features": [
+        "Curved equestrian body with reinforced gusset",
+        "Solid brass turn-lock clasp with tactile click",
+        "Interior zip compartment and smartphone slip",
+        "Includes authentic circular Bharatvarsh stitched leather charm",
+        "Adjustable 110cm - 130cm shoulder strap"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Heritage Heirloom",
+      "isFeatured": true,
+      "careInstructions": "Store in the unbleached cotton dust bag with tissue paper stuffing to preserve its structured contour."
+    },
+    {
+      "id": "blc-w-purse-02",
+      "name": "The Ganga Artisanal Day Clutch",
+      "category": "Women",
+      "productType": "Purses",
+      "price": 6450,
+      "shortDescription": "Minimalist envelope clutch with detachable wristlet and magnetic horn-stud closure.",
+      "description": "A seamless transition from day meetings to evening soirees. Clean geometric envelope flap secured by hidden rare-earth magnetic closures, fitted with an interior zip pocket and card organizer.",
+      "images": [
+        "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Semi-Gloss Full-Grain Tuscan Calfskin",
+      "hardware": "Concealed Magnetic Closures & Brass Swivel Clip",
+      "dimensions": "27.0 cm x 16.5 cm x 4.0 cm",
+      "colors": [
+        {
+          "name": "Rich Cognac",
+          "hex": "#7E3E1C"
+        },
+        {
+          "name": "Onyx Noir",
+          "hex": "#1A1816"
+        }
+      ],
+      "features": [
+        "Detachable 20cm leather wristlet strap with solid brass swivel hook",
+        "Raw suede interior lining",
+        "4 built-in quick access card slots",
+        "Hand saddle-stitched borders"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "New Arrival",
+      "isFeatured": false,
+      "careInstructions": "Wipe down with a dry flannel cloth after wear. Keep away from solvent perfumes."
+    },
+    {
+      "id": "blc-u-pack-01",
+      "name": "The Himalaya Heritage Rucksack",
+      "category": "Unisex",
+      "productType": "Backpacks",
+      "price": 16800,
+      "originalPrice": 18900,
+      "shortDescription": "Rugged luxury roll-top backpack with padded 16\" laptop sleeve and solid brass hardware.",
+      "description": "Engineered for expeditions and daily metropolitan commutes alike. Built from heavyweight 2.2mm full-grain pull-up leather that lightens where folded to record every adventure in an incredible patina. Features padded ergonomic shoulder straps lined in breathable natural wool felt, quick-access front pockets, and a suspended laptop suite.",
+      "images": [
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "2.2mm Oil-Waxed Full-Grain Pull-Up Cowhide",
+      "hardware": "Cast Solid Brass Roller Buckles, Rivets & Dog-Clips",
+      "dimensions": "42.0 cm x 30.0 cm x 14.0 cm (Expandable to 50cm roll-top)",
+      "colors": [
+        {
+          "name": "Rustic Cognac",
+          "hex": "#87421F"
+        },
+        {
+          "name": "Dark Oak",
+          "hex": "#3B2215"
+        }
+      ],
+      "features": [
+        "Suspended padded sleeve fits up to 16\" MacBook Pro / laptop",
+        "Expandable roll-top closure with twin solid brass cinch straps",
+        "Exterior side pocket for water bottle or umbrella",
+        "Comfort-padded shoulder straps with wool felt underlay",
+        "Solid copper hand-peened rivets at critical stress points"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Flagship Edition",
+      "isFeatured": true,
+      "careInstructions": "Scratches can be rubbed out with your thumb due to the rich oil content in pull-up leather. Apply heavy wax balm once a year."
+    },
+    {
+      "id": "blc-u-pack-02",
+      "name": "The Deccan Commuter Leather Backpack",
+      "category": "Unisex",
+      "productType": "Backpacks",
+      "price": 14200,
+      "shortDescription": "Streamlined city backpack with clamshell opening and luggage trolley strap.",
+      "description": "A sophisticated urban commuter pack with a structured silhouette that stands upright when placed on the ground. Features an integrated rear luggage sleeve to slip over suitcase handles and a hidden passport security pocket against the back panel.",
+      "images": [
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Vegetable-Tanned Full-Grain Vachetta Leather",
+      "hardware": "Two-Way Antiqued Brass Clamshell Zippers",
+      "dimensions": "39.0 cm x 28.5 cm x 12.0 cm",
+      "colors": [
+        {
+          "name": "Espresso Bean",
+          "hex": "#27170E"
+        },
+        {
+          "name": "Saddle Tan",
+          "hex": "#8B4822"
+        }
+      ],
+      "features": [
+        "Rear travel trolley sleeve for seamless airport navigation",
+        "180-degree clamshell opening for easy packing",
+        "Reinforced top grab handle hand-stitched with 40 saddle stitches",
+        "Dual pen holders and business card organizational slots"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Executive",
+      "isFeatured": false,
+      "careInstructions": "Keep away from damp floors. Condition periodically to preserve leather suppleness."
+    },
+    {
+      "id": "blc-u-brief-01",
+      "name": "The Sovereign English Bridle Briefcase",
+      "category": "Unisex",
+      "productType": "Briefcases",
+      "price": 22500,
+      "originalPrice": 24900,
+      "shortDescription": "Heirloom legal briefcase with solid brass English lock and hand-stitched rolled handle.",
+      "description": "The crowning achievement of Bharatvarsh Leathercrafts LLP. Master-crafted over 36 bench hours from heavy English bridle leather. Designed with a hand-formed rolled leather handle built around a rawhide core, triple gusset compartments for legal briefs and laptops, and a working solid brass locking clasp with bespoke key tassel.",
+      "images": [
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Grade-A English Bridle Leather (3.2mm hide thickness)",
+      "hardware": "British-Style Solid Cast Brass Mortise Key Lock with Working Key",
+      "dimensions": "41.0 cm x 31.0 cm x 13.0 cm",
+      "colors": [
+        {
+          "name": "London Tan",
+          "hex": "#9E5B2D"
+        },
+        {
+          "name": "Havana Chestnut",
+          "hex": "#4E2413"
+        },
+        {
+          "name": "Midnight Jet",
+          "hex": "#1A1817"
+        }
+      ],
+      "features": [
+        "Triple gusseted interior partitions with document sleeves",
+        "Hand-molded rolled leather handle (tested to 40kg load capacity)",
+        "Detachable all-leather shoulder strap with padded weight-dispersal pad",
+        "Working solid brass key lock with embossed leather key-bell",
+        "Brass base studs protect bottom leather from floor friction"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Masterpiece",
+      "isFeatured": true,
+      "careInstructions": "Treat like an heirloom. Wax and polish with pure carnauba cream twice a year. Guaranteed for life."
+    },
+    {
+      "id": "blc-u-brief-02",
+      "name": "The Viceroy Slim Attaché Case",
+      "category": "Unisex",
+      "productType": "Briefcases",
+      "price": 17900,
+      "shortDescription": "Sleek single-gusset laptop briefcase in vegetable-tanned saddle leather.",
+      "description": "A modern, slimline briefcase for executives and professionals. Holds a 15\" laptop, tablet, charger cables, and notebook in a clean 6.5cm low-profile form factor that retains its sharp structure indefinitely.",
+      "images": [
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80"
+      ],
+      "leatherType": "Vegetable-Tanned Full-Grain Cowhide with Satin Sheen",
+      "hardware": "Solid Brass Two-Way Top Zipper & Antique Brass D-Rings",
+      "dimensions": "38.5 cm x 28.0 cm x 6.5 cm",
+      "colors": [
+        {
+          "name": "Oxford Chestnut",
+          "hex": "#582B17"
+        },
+        {
+          "name": "Midnight Charcoal",
+          "hex": "#222222"
+        }
+      ],
+      "features": [
+        "Padded central compartment fits up to 15\" laptop",
+        "Full-width magnetic rear magazine pocket",
+        "Removable webbing-backed leather shoulder strap",
+        "Edge creased and hand-burnished with natural carnauba wax"
+      ],
+      "monogramAvailable": true,
+      "inStock": true,
+      "badge": "Modern Professional",
+      "isFeatured": false,
+      "careInstructions": "Wipe with a clean dry microfiber cloth and avoid prolonged exposure to rain."
+    }
+  ],
+  "orders": [],
+  "inquiries": []
+}

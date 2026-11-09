@@ -1,8 +1,19 @@
 import { CategoryStructure, Product, TopCategory } from '../types';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from '../data/initialCatalog';
+import { auth } from '../lib/firebase';
 
 const STORAGE_KEY_PRODUCTS = 'blc_store_products_v1';
 const STORAGE_KEY_CATEGORIES = 'blc_store_categories_v1';
+
+async function getAuthHeader(): Promise<Record<string, string>> {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
+  } catch {}
+  return {};
+}
 
 export const catalogService = {
   // Sync from server (MySQL / Disk storage)
@@ -75,12 +86,18 @@ export const catalogService = {
   saveCategories(categories: CategoryStructure[]): void {
     try {
       localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
-      // Sync to server asynchronously
-      fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories })
-      }).catch((err) => console.warn('[Catalog Sync] Categories sync notice:', err.message));
+      // Sync to server asynchronously with owner authentication
+      getAuthHeader().then((authHeaders) => {
+        fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          body: JSON.stringify({ categories })
+        }).then(res => {
+          if (res.status === 403) {
+            console.warn('[Catalog Sync] 403 Forbidden: Store Management requires Owner permissions.');
+          }
+        }).catch((err) => console.warn('[Catalog Sync] Categories sync notice:', err.message));
+      });
     } catch (e) {
       console.error('Failed to save categories to storage', e);
     }
@@ -95,12 +112,18 @@ export const catalogService = {
     products.unshift(product);
     this.saveProducts(products);
 
-    // Sync to server / MySQL asynchronously
-    fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(product)
-    }).catch((err) => console.warn('[Catalog Sync] Product add notice:', err.message));
+    // Sync to server / MySQL with owner authentication
+    getAuthHeader().then((authHeaders) => {
+      fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify(product)
+      }).then(res => {
+        if (res.status === 403) {
+          console.warn('[Catalog Sync] 403 Forbidden: Product creation requires Owner role.');
+        }
+      }).catch((err) => console.warn('[Catalog Sync] Product add notice:', err.message));
+    });
 
     // Ensure category has this productType
     this.ensureProductType(product.category as TopCategory, product.productType);
@@ -115,12 +138,18 @@ export const catalogService = {
       products[index] = updatedProduct;
       this.saveProducts(products);
 
-      // Sync to server / MySQL asynchronously
-      fetch(`/api/products/${updatedProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProduct)
-      }).catch((err) => console.warn('[Catalog Sync] Product update notice:', err.message));
+      // Sync to server / MySQL with owner authentication
+      getAuthHeader().then((authHeaders) => {
+        fetch(`/api/products/${updatedProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          body: JSON.stringify(updatedProduct)
+        }).then(res => {
+          if (res.status === 403) {
+            console.warn('[Catalog Sync] 403 Forbidden: Product update requires Owner role.');
+          }
+        }).catch((err) => console.warn('[Catalog Sync] Product update notice:', err.message));
+      });
 
       this.ensureProductType(updatedProduct.category as TopCategory, updatedProduct.productType);
     }
@@ -133,10 +162,17 @@ export const catalogService = {
     if (filtered.length !== products.length) {
       this.saveProducts(filtered);
 
-      // Sync to server / MySQL asynchronously
-      fetch(`/api/products/${productId}`, {
-        method: 'DELETE'
-      }).catch((err) => console.warn('[Catalog Sync] Product delete notice:', err.message));
+      // Sync to server / MySQL with owner authentication
+      getAuthHeader().then((authHeaders) => {
+        fetch(`/api/products/${productId}`, {
+          method: 'DELETE',
+          headers: authHeaders
+        }).then(res => {
+          if (res.status === 403) {
+            console.warn('[Catalog Sync] 403 Forbidden: Product deletion requires Owner role.');
+          }
+        }).catch((err) => console.warn('[Catalog Sync] Product delete notice:', err.message));
+      });
 
       return true;
     }
